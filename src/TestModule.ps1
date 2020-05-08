@@ -5,8 +5,6 @@ else{
     $ScriptLocation = "C:\Users\Ryan2\OneDrive\Code\EFPosh\src"
 }
 
-. c:\Users\Ryan2\OneDrive\Code\EFPosh\src\buildModule.ps1
-
 Import-Module "$ScriptLocation\Module\EFPosh.psd1" -Force
 
 $DBFile = "$ScriptLocation\bin\MyDatabase.sqlite"
@@ -55,3 +53,6 @@ $QueryObject.ToList()
 $k = $QueryObject.FirstOrDefault()
 $k.Name = '2'
 $Context.SaveChanges()
+
+$QueryObject = New-EFPoshQuery -Type 'TestTableTwo'
+$QueryObject.ToList()
