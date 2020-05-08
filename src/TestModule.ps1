@@ -5,6 +5,8 @@ else{
     $ScriptLocation = "C:\Users\Ryan2\OneDrive\Code\EFPosh\src"
 }
 
+. c:\Users\Ryan2\OneDrive\Code\EFPosh\src\buildModule.ps1
+
 Import-Module "$ScriptLocation\Module\EFPosh.psd1" -Force
 
 $DBFile = "$ScriptLocation\bin\MyDatabase.sqlite"
@@ -33,3 +35,23 @@ $Tables = @(
 
 $Context = New-EFPoshContext -ConnectionString $SQLiteConnectionString -DBType 'SQLite' -Entities $Tables -EnsureCreated
 
+$NewObject = [TestTableTwo]::new()
+$NewObject.Name = 'MyTest'
+
+$Context.Add( $NewObject )
+$Context.SaveChanges()
+
+$NewObject = [TestTableTwo]::new()
+$NewObject.Name = 'MyTest2'
+$Context.Add( $NewObject )
+$Context.SaveChanges()
+
+
+$QueryObject = New-EFPoshQuery -Type 'TestTableTwo'
+$QueryObject.Where("Name=@0",'MyTest')
+$QueryObject.ToList()
+
+
+$k = $QueryObject.FirstOrDefault()
+$k.Name = '2'
+$Context.SaveChanges()

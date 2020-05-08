@@ -4,10 +4,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Linq.Dynamic.Core;
+using System.Linq.Dynamic;
 using Microsoft.EntityFrameworkCore.Internal;
 using System.Reflection;
 using System.IO;
+using System.Linq.Expressions;
 
 namespace EFPosh
 {
@@ -30,7 +31,6 @@ namespace EFPosh
             return null;
         }
         private DbContext _poshContext;
-        private IQueryable<object> _baseIQueryable;
         public void NewPoshContext(
             string connectionString,
             string dbType,
@@ -57,82 +57,31 @@ namespace EFPosh
             _poshContext = dbContext;
         }
         
-        public void NewIQueryable(Type type)
+        public DbContext DBContext
         {
-            _baseIQueryable = (IQueryable<object>)typeof(DbContext)
-                .GetMethod("Set")
-                .MakeGenericMethod(type)
-                .Invoke(_poshContext, new object[] { });
+            get { return _poshContext; }
+            set { _poshContext = value; }
         }
 
-        private void CheckIfIQueryableEmpty()
+        public PoshContextQuery<T> NewQuery<T>()
+            where T : class
         {
-            if(_baseIQueryable == null)
-            {
-                throw new Exception("IQueryable not created. Must first execute .NewIQueryable(type) or NewIQueryable did not complete successfully");
-            }
+            return new PoshContextQuery<T>(_poshContext);
         }
-
-        public void Where(string whereQuery, object[] QueryObjects)
-        {
-            CheckIfIQueryableEmpty();
-            _baseIQueryable = _baseIQueryable.Where(whereQuery, QueryObjects);
-        }
-
-        public void Take(int take)
-        {
-            CheckIfIQueryableEmpty();
-            _baseIQueryable = _baseIQueryable.Take(take);
-        }
-
-        public void Skip(int skip)
-        {
-            CheckIfIQueryableEmpty();
-            _baseIQueryable = _baseIQueryable.Skip(skip);
-        }
-
-        public void OrderBy(string orderBy)
-        {
-            CheckIfIQueryableEmpty();
-            _baseIQueryable = _baseIQueryable.OrderBy(orderBy);
-        }
-
-        public List<object> ToList()
-        {
-            CheckIfIQueryableEmpty();
-            var tempIqueryable = _baseIQueryable;
-            ClearIQueryable();
-            return tempIqueryable.ToList();
-        }
-
-        public object FirstOrDefault()
-        {
-            CheckIfIQueryableEmpty();
-            var tempIqueryable = _baseIQueryable;
-            ClearIQueryable();
-            return tempIqueryable.FirstOrDefault();
-        }
-
+                
         public void Add(object obj)
         {
             _poshContext.Add(obj);
-            _poshContext.SaveChanges();
         }
 
         public void AddRange(object[] objs)
         {
             _poshContext.AddRange(objs);
-            _poshContext.SaveChanges();
         }
 
         public void SaveChanges()
         {
             _poshContext.SaveChanges();
-        }
-
-        public void ClearIQueryable()
-        {
-            _baseIQueryable = null;
         }
 
         public void Remove(object obj)
@@ -155,5 +104,45 @@ namespace EFPosh
             }
             return returnDict;
         }
+    }
+    public class PoshContextQuery<T> where T : class
+    {
+        public PoshContextQuery(DbContext context)
+        {
+            _baseIQueryable = context.Set<T>().AsQueryable();
+        }
+        private IQueryable<T> _baseIQueryable;
+        public void AsNoTracking()
+        {
+            _baseIQueryable = _baseIQueryable.AsNoTracking();
+        }
+        public void Where(string whereQuery, object[] QueryObjects)
+        {
+            _baseIQueryable = _baseIQueryable.Where(whereQuery, QueryObjects);
+        }
+        public void Take(int take)
+        {
+            _baseIQueryable = _baseIQueryable.Take(take);
+        }
+
+        public void Skip(int skip)
+        {
+            _baseIQueryable = _baseIQueryable.Skip(skip);
+        }
+
+        public void OrderBy(string orderBy)
+        {
+            _baseIQueryable = _baseIQueryable.OrderBy(orderBy);
+        }
+
+        public List<T> ToList()
+        {
+            return _baseIQueryable.ToList();
+        }
+        public object FirstOrDefault()
+        {
+            return _baseIQueryable.FirstOrDefault();
+        }
+
     }
 }

@@ -26,30 +26,33 @@ namespace EFPosh
                                 );
             foreach (var t in _types)
             {
-                
-                    //entityMethod.MakeGenericMethod(t.Type).Invoke(modelBuilder, new object[] { });
-                    modelBuilder.Entity(t.Type);
-                    if (t.PrimaryKeys != null)
+
+                //entityMethod.MakeGenericMethod(t.Type).Invoke(modelBuilder, new object[] { });
+                modelBuilder.Entity(t.Type);
+                if (t.PrimaryKeys != null)
+                {
+                    modelBuilder.Entity(t.Type).HasKey(t.PrimaryKeys);
+                }
+                if (!string.IsNullOrEmpty(t.TableName))
+                {
+                    if (!string.IsNullOrEmpty(t.Schema))
                     {
-                        modelBuilder.Entity(t.Type).HasKey(t.PrimaryKeys);
+                        modelBuilder.Entity(t.Type).ToTable(t.TableName, t.Schema);
                     }
-                    if (!string.IsNullOrEmpty(t.TableName))
+                    else
                     {
-                        if (!string.IsNullOrEmpty(t.Schema))
-                        {
-                            modelBuilder.Entity(t.Type).ToTable(t.TableName, t.Schema);
-                        }
-                        else
-                        {
-                            modelBuilder.Entity(t.Type).ToTable(t.TableName);
-                        }
-                    }
-                    else if (!string.IsNullOrEmpty(t.Schema))
-                    {
-                        modelBuilder.Entity(t.Type).ToTable(t.Type.GetType().Name, t.Schema);
+                        modelBuilder.Entity(t.Type).ToTable(t.TableName);
                     }
                 }
-            
+                else if (!string.IsNullOrEmpty(t.Schema))
+                {
+                    modelBuilder.Entity(t.Type).ToTable(t.Type.GetType().Name, t.Schema);
+                }
+                if (t.Keyless)
+                {
+                    modelBuilder.Entity(t.Type).HasNoKey();
+                }
+            }
         }
     }
 }
