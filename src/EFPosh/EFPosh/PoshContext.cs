@@ -24,35 +24,9 @@ namespace EFPosh
                                     m.IsGenericMethod == true &&
                                     m.GetParameters().Count() == 0
                                 );
-            var queryMethod = typeof(ModelBuilder).GetMethods().Single(
-                                    m => m.Name.Equals("Query") &&
-                                    m.IsGenericMethod == true &&
-                                    m.GetParameters().Count() == 0
-                                );
             foreach (var t in _types)
             {
-                if (t.Keyless)
-                {
-                    modelBuilder.Query(t.Type);
-                    if (!string.IsNullOrEmpty(t.TableName))
-                    {
-                        if (!string.IsNullOrEmpty(t.Schema))
-                        {
-                            modelBuilder.Query(t.Type).ToView(t.TableName, t.Schema);
-                        }
-                        else
-                        {
-                            modelBuilder.Query(t.Type).ToView(t.TableName);
-                        }
-                    }
-                    else if (!string.IsNullOrEmpty(t.Schema))
-                    {
-                        modelBuilder.Query(t.Type).ToView(t.Type.GetType().Name, t.Schema);
-                    }
-                    //queryMethod.MakeGenericMethod(t.Type).Invoke(modelBuilder, new object[] { });
-                }
-                else
-                {
+                
                     //entityMethod.MakeGenericMethod(t.Type).Invoke(modelBuilder, new object[] { });
                     modelBuilder.Entity(t.Type);
                     if (t.PrimaryKeys != null)
@@ -75,7 +49,7 @@ namespace EFPosh
                         modelBuilder.Entity(t.Type).ToTable(t.Type.GetType().Name, t.Schema);
                     }
                 }
-            }
+            
         }
     }
 }
