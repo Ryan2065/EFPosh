@@ -6,11 +6,29 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Linq.Dynamic.Core;
 using Microsoft.EntityFrameworkCore.Internal;
+using System.Reflection;
+using System.IO;
 
 namespace EFPosh
 {
     public class PoshContextInteractions
     {
+        public PoshContextInteractions()
+        {
+            AppDomain currentDomain = AppDomain.CurrentDomain;
+            currentDomain.AssemblyResolve += new ResolveEventHandler(PoshResolveEventHandler);
+        }
+        private static Assembly PoshResolveEventHandler(object sender, ResolveEventArgs args)
+        {
+            var dllNeeded = args.Name.Split(',')[0] + ".dll";
+            var directoryInfo = Path.GetDirectoryName(typeof(PoshContextInteractions).Assembly.Location);
+            var fullDLLPath = Path.Combine(directoryInfo, dllNeeded);
+            if (File.Exists(fullDLLPath))
+            {
+                return Assembly.LoadFrom(fullDLLPath);
+            }
+            return null;
+        }
         private DbContext _poshContext;
         private IQueryable<object> _baseIQueryable;
         public void NewPoshContext(
