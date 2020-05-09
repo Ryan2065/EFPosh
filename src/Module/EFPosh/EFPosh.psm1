@@ -1,7 +1,7 @@
 
 $CommandFiles = Get-ChildItem -Path "$PSScriptRoot\Commands" -Filter '*.ps1'
 foreach($file in $CommandFiles){
-    Write-Host "Importing $($file.FullName)"
+    Write-Verbose "Importing $($file.FullName)"
     . $file.FullName
 }
 

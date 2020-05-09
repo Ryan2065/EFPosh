@@ -12,7 +12,7 @@
 RootModule = '.\EFPosh.psm1'
 
 # Version number of this module.
-ModuleVersion = '0.0.1'
+ModuleVersion = '0.0.2'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -95,7 +95,7 @@ PrivateData = @{
     PSData = @{
 
         # Tags applied to this module. These help with module discovery in online galleries.
-        Tags = @('Entity Framework','ORM')
+        Tags = @('EntityFramework','ORM')
 
         # A URL to the license for this module.
         LicenseUri = 'https://github.com/Ryan2065/EFPosh/blob/master/LICENSE'

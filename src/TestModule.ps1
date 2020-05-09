@@ -5,7 +5,7 @@ else{
     $ScriptLocation = "C:\Users\Ryan2\OneDrive\Code\EFPosh\src"
 }
 
-Import-Module "$ScriptLocation\Module\EFPosh.psd1" -Force
+Import-Module "$ScriptLocation\Module\EFPosh" -Force
 
 $DBFile = "$ScriptLocation\bin\MyDatabase.sqlite"
 
