@@ -6,6 +6,8 @@ This module exposes a lot of Entity Framework Core features through PowerShell! 
 
 ## Getting Started
 
+Install the module with ```Install-Module EFPosh```
+
 Entity Framework works by taking existing classes and mapping them to databases. This works with any class, whether it be defined in PowerShell or a dll. To quickly get started with this module, define your classes in PowerShell:
 
 ``` PowerShell
