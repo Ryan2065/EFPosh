@@ -5,6 +5,11 @@ else{
     $ScriptLocation = "C:\Users\Ryan2\OneDrive\Code\EFPosh\src"
 }
 
+if($null -eq ( Get-Module EFPosh )){
+    . "$PSScriptRoot\buildModule.ps1"
+}
+
+$ErrorActionPreference = 'Stop'
 Import-Module "$ScriptLocation\Module\EFPosh" -Force
 
 $DBFile = "$ScriptLocation\bin\MyDatabase.sqlite"
@@ -31,7 +36,7 @@ $Tables = @(
     ( New-EFPoshEntityDefinition -Type 'TestTableTwo' -PrimaryKey 'MyOtherUniqueId' )
 )
 
-$Context = New-EFPoshContext -ConnectionString $SQLiteConnectionString -DBType 'SQLite' -Entities $Tables -EnsureCreated
+$Context = New-EFPoshContext -SQLiteFile $DBFile -Entities $Tables -EnsureCreated
 
 $NewObject = [TestTableTwo]::new()
 $NewObject.Name = 'MyTest'

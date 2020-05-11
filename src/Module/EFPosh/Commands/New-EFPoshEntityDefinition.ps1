@@ -30,7 +30,7 @@ Function New-EFPoshEntityDefinition{
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory=$true)]
-        [Type]$Type,
+        [string]$Type,
         [Parameter(Mandatory=$false)]
         [string[]]$PrimaryKeys,
         [Parameter(Mandatory=$false)]
@@ -40,8 +40,9 @@ Function New-EFPoshEntityDefinition{
         [Parameter(Mandatory = $false)]
         [string]$Schema
     )
+
     $newEntity = [EFPosh.PoshEntity]::new()
-    $newEntity.Type = $Type
+    $newEntity.Type = (New-Object -TypeName $Type).GetType()
     $newEntity.PrimaryKeys = $PrimaryKeys
     if($Keyless){
         $newEntity.Keyless = $true

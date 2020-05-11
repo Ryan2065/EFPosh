@@ -27,20 +27,40 @@ Function New-EFPoshContext{
     #>
     [CmdletBinding()]
     Param(
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory=$true, ParameterSetName = "ConnectionString")]
         [string]$ConnectionString,
-        [Parameter(Mandatory = $false)]
+        [Parameter(Mandatory = $false, ParameterSetName = "ConnectionString")]
         [ValidateSet('SQLite', 'MSSQL')]
         [string]$DBType = 'MSSQL',
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true, ParameterSetName = "SQLite")]
+        [string]$SQLiteFile,
+        [Parameter(Mandatory = $true, ParameterSetName = "MSSQL")]
+        [string]$MSSQLServer,
+        [Parameter(Mandatory = $true, ParameterSetName = "MSSQL")]
+        [string]$MSSQLDatabase,
+        [Parameter(Mandatory = $false, ParameterSetName = "MSSQL")]
+        [bool]$MSSQLIntegratedSecurity = $false,
+        [Parameter(Mandatory = $true, ParameterSetName = "ConnectionString")]
+        [Parameter(Mandatory = $true, ParameterSetName = "SQLite")]
+        [Parameter(Mandatory = $true, ParameterSetName = "MSSQL")]
         [EFPosh.PoshEntity[]]$Entities,
-        [Parameter(Mandatory=$false)]
+        [Parameter(Mandatory = $false, ParameterSetName = "ConnectionString")]
+        [Parameter(Mandatory = $false, ParameterSetName = "SQLite")]
+        [Parameter(Mandatory = $false, ParameterSetName = "MSSQL")]
         [switch]$EnsureCreated
     )
     $Script:LatestDBContext = $null
     $Script:LatestDBContext = [EFPosh.PoshContextInteractions]::new()
     $boolEnsureCreated = $false
     if($EnsureCreated){ $boolEnsureCreated = $true }
+    if($PSCmdlet.ParameterSetName -eq 'SQLite'){
+        $DBType = 'SQLite'
+        $ConnectionString = "Filename=$($SQLiteFile)"
+    }
+    elseif($PSCmdlet.ParameterSetName -eq 'MSSQL'){
+        $DBType = 'MSSQL'
+        $ConnectionString = "Server=$($MSSQLServer);Database=$($MSSQLDatabase);Integrated Security=$($MSSQLIntegratedSecurity)"
+    }
     $null = $Script:LatestDBContext.NewPoshContext($ConnectionString, $DBType, $Entities, $boolEnsureCreated)
     return $Script:LatestDBContext
 }

@@ -1,7 +1,7 @@
 Function New-EFPoshQuery{
     Param(
         [Parameter(Mandatory = $true)]
-        [Type]$Type,
+        [string]$Type,
         [Parameter(Mandatory=$false)]
         [EFPosh.PoshContextInteractions]$Context
     )
@@ -14,5 +14,5 @@ Function New-EFPoshQuery{
         }
     }
     
-    return $Context.GetType().GetMethod("NewQuery").MakeGenericMethod($Type).Invoke($Context, $null)
+    return $Context.GetType().GetMethod("NewQuery").MakeGenericMethod( (New-Object -TypeName $Type).GetType() ).Invoke($Context, $null)
 }
