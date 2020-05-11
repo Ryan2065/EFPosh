@@ -198,23 +198,27 @@ namespace EFPosh
         {
             _baseIQueryable = _baseIQueryable.AsNoTracking();
         }
-        public void Where(string whereQuery, object[] QueryObjects)
+        public PoshContextQuery<T> Where(string whereQuery, object[] QueryObjects)
         {
             _baseIQueryable = _baseIQueryable.Where(whereQuery, QueryObjects);
+            return this;
         }
-        public void Take(int take)
+        public PoshContextQuery<T> Take(int take)
         {
             _baseIQueryable = _baseIQueryable.Take(take);
+            return this;
         }
 
-        public void Skip(int skip)
+        public PoshContextQuery<T> Skip(int skip)
         {
             _baseIQueryable = _baseIQueryable.Skip(skip);
+            return this;
         }
 
-        public void OrderBy(string orderBy)
+        public PoshContextQuery<T> OrderBy(string orderBy)
         {
             _baseIQueryable = _baseIQueryable.OrderBy(orderBy);
+            return this;
         }
 
         public List<T> ToList()
