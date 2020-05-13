@@ -37,7 +37,7 @@ $Tables = @(
 )
 
 $Context = New-EFPoshContext -SQLiteFile $DBFile -Entities $Tables -EnsureCreated
-
+return
 $NewObject = [TestTableTwo]::new()
 $NewObject.Name = 'MyTest'
 

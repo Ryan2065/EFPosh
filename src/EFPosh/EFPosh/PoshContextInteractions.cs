@@ -10,6 +10,7 @@ using System.Reflection;
 using System.IO;
 using System.Linq.Expressions;
 using System.Dynamic;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace EFPosh
 {
@@ -31,12 +32,40 @@ namespace EFPosh
             }
             return null;
         }
+        static IServiceProvider BuildServiceProvider(IServiceCollection services)
+        {
+            var t = typeof(ServiceCollectionContainerBuilderExtensions).GetTypeInfo();
+            var BuildServiceProviderMethod = t.GetMethod(nameof(BuildServiceProvider), new Type[] { typeof(IServiceCollection) });
+            return (IServiceProvider)BuildServiceProviderMethod.Invoke(null, new object[] { services, false });
+        }
+
+        public IServiceCollection GetServiceCollection()
+        {
+            return (new ServiceCollection()).AddEntityFrameworkSqlServer();
+            /*Console.WriteLine("Test");
+            var sc = new ServiceCollection();
+            switch (dbType.ToUpper())
+            {
+                case "SQLITE":
+                    Console.WriteLine("Test2");
+                    sc.AddEntityFrameworkSqlite();
+                    break;
+                case "MSSQL":
+                default:
+                    sc.AddEntityFrameworkSqlServer();
+                    break;
+            }
+            Console.WriteLine("Test3");
+            return sc;*/
+        }
+
         private DbContext _poshContext;
         public void NewPoshContext(
             string connectionString,
             string dbType,
             PoshEntity[] Types,
-            bool EnsureCreated
+            bool EnsureCreated,
+            IServiceProvider existingProvider = null
         )
         {
             var dbOptions = new DbContextOptionsBuilder<PoshContext>();
@@ -49,6 +78,10 @@ namespace EFPosh
                 default:
                     dbOptions.UseSqlServer(connectionString);
                     break;
+            }
+            if(existingProvider != null)
+            {
+                dbOptions.UseInternalServiceProvider(existingProvider);
             }
             var dbContext = new PoshContext(dbOptions.Options, Types);
             if (EnsureCreated)

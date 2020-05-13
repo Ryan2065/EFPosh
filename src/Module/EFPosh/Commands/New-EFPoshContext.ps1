@@ -61,6 +61,25 @@ Function New-EFPoshContext{
         $DBType = 'MSSQL'
         $ConnectionString = "Server=$($MSSQLServer);Database=$($MSSQLDatabase);Integrated Security=$($MSSQLIntegratedSecurity)"
     }
-    $null = $Script:LatestDBContext.NewPoshContext($ConnectionString, $DBType, $Entities, $boolEnsureCreated)
+
+    try{
+        $null = $Script:LatestDBContext.NewPoshContext($ConnectionString, $DBType, $Entities, $boolEnsureCreated, $null)
+    }
+    catch {
+        try{
+                #[Microsoft.Extensions.DependencyInjection.IServiceCollection]$Collection = [Microsoft.Extensions.DependencyInjection.ServiceCollection]::new()
+                #$SqlLiteMethods = [Microsoft.Extensions.DependencyInjection.SqliteServiceCollectionExtensions].GetMethods()
+                #$Collection = [Microsoft.Extensions.DependencyInjection.SqliteServiceCollectionExtensions].GetMethods()[0].Invoke($null, @($Collection))
+                #$ServiceProvider = $null
+                [Microsoft.Extensions.DependencyInjection.IServiceCollection]$Collection = [Microsoft.Extensions.DependencyInjection.ServiceCollection]::new()
+                [Microsoft.Extensions.DependencyInjection.SqliteServiceCollectionExtensions]::AddEntityFrameworkSqlite($Collection)
+                $ServiceProvider = [Microsoft.Extensions.DependencyInjection.ServiceCollectionContainerBuilderExtensions]::BuildServiceProvider($Collection)
+        }
+        catch {
+            throw $_
+        }
+        $null = $Script:LatestDBContext.NewPoshContext($ConnectionString, $DBType, $Entities, $boolEnsureCreated, $ServiceProvider)
+    }
+    
     return $Script:LatestDBContext
 }
