@@ -107,7 +107,7 @@ PrivateData = @{
         # IconUri = ''
 
         # ReleaseNotes of this module
-        ReleaseNotes = 'Made the query buildable off itself'
+        ReleaseNotes = 'Updated the query language'
 
         # Prerelease string of this module
         # Prerelease = ''
