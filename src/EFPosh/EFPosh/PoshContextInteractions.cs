@@ -10,6 +10,7 @@ using System.Reflection;
 using System.IO;
 using System.Linq.Expressions;
 using System.Dynamic;
+using System.Linq.Dynamic.Core;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace EFPosh
@@ -35,54 +36,34 @@ namespace EFPosh
         static IServiceProvider BuildServiceProvider(IServiceCollection services)
         {
             var t = typeof(ServiceCollectionContainerBuilderExtensions).GetTypeInfo();
-            var BuildServiceProviderMethod = t.GetMethod(nameof(BuildServiceProvider), new Type[] { typeof(IServiceCollection) });
+            var BuildServiceProviderMethod = t.GetMethod(nameof(BuildServiceProvider), new Type[] { typeof(IServiceCollection), typeof(bool) });
             return (IServiceProvider)BuildServiceProviderMethod.Invoke(null, new object[] { services, false });
         }
-
-        public IServiceCollection GetServiceCollection()
-        {
-            return (new ServiceCollection()).AddEntityFrameworkSqlServer();
-            /*Console.WriteLine("Test");
-            var sc = new ServiceCollection();
-            switch (dbType.ToUpper())
-            {
-                case "SQLITE":
-                    Console.WriteLine("Test2");
-                    sc.AddEntityFrameworkSqlite();
-                    break;
-                case "MSSQL":
-                default:
-                    sc.AddEntityFrameworkSqlServer();
-                    break;
-            }
-            Console.WriteLine("Test3");
-            return sc;*/
-        }
-
         private DbContext _poshContext;
         public void NewPoshContext(
             string connectionString,
             string dbType,
             PoshEntity[] Types,
-            bool EnsureCreated,
-            IServiceProvider existingProvider = null
+            bool EnsureCreated
         )
         {
             var dbOptions = new DbContextOptionsBuilder<PoshContext>();
+            IServiceCollection coll = new ServiceCollection();
             switch (dbType.ToUpper())
             {
                 case "SQLITE":
                     dbOptions.UseSqlite(connectionString);
+                    coll.AddEntityFrameworkSqlite();
                     break;
                 case "MSSQL":
                 default:
                     dbOptions.UseSqlServer(connectionString);
+                    coll.AddEntityFrameworkSqlServer();
                     break;
             }
-            if(existingProvider != null)
-            {
-                dbOptions.UseInternalServiceProvider(existingProvider);
-            }
+            coll = coll.AddEntityFrameworkSqlite();
+            var sp = BuildServiceProvider(coll);
+            dbOptions.UseInternalServiceProvider(sp);
             var dbContext = new PoshContext(dbOptions.Options, Types);
             if (EnsureCreated)
             {
@@ -97,10 +78,10 @@ namespace EFPosh
             set { _poshContext = value; }
         }
 
-        public PoshContextQuery<T> NewQuery<T>()
+        public PoshEntityColumn<T> NewQuery<T>()
             where T : class
         {
-            return new PoshContextQuery<T>(_poshContext);
+            return new PoshEntityColumn<T>(_poshContext, "", new List<object>() );
         }
         
         private object ConvertType(object obj)
@@ -195,7 +176,7 @@ namespace EFPosh
         {
             var requestedType = _poshContext.Model
                                 .GetEntityTypes()
-                                .Where(p => p.Name.Equals(binder.Name))
+                                .Where(p => p.Name.ToUpper().Equals(binder.Name.ToUpper()))
                                 .Select(p => p.ClrType)
                                 .FirstOrDefault();
             result = null;
@@ -208,21 +189,10 @@ namespace EFPosh
             }
             return result == null ? false : true;
         }
-
-        public Dictionary<string, List<string>> GetTableProperties()
-        {
-            var returnDict = new Dictionary<string, List<string>>();
-            var tableList = _poshContext.Model.GetEntityTypes();
-            foreach(var table in tableList)
-            {
-                returnDict.Add(table.Name, table.GetProperties().Select(p => p.Name).ToList());
-            }
-            return returnDict;
-        }
     }
-    public class PoshContextQuery<T> where T : class
+    public class PoshContextEntity<T> where T : class
     {
-        public PoshContextQuery(DbContext context)
+        public PoshContextEntity(DbContext context)
         {
             _baseIQueryable = context.Set<T>().AsQueryable();
         }
@@ -231,24 +201,29 @@ namespace EFPosh
         {
             _baseIQueryable = _baseIQueryable.AsNoTracking();
         }
-        public PoshContextQuery<T> Where(string whereQuery, object[] QueryObjects)
+        public PoshContextEntity<T> WhereQuery(string whereQuery, object[] QueryObjects)
         {
             _baseIQueryable = _baseIQueryable.Where(whereQuery, QueryObjects);
             return this;
         }
-        public PoshContextQuery<T> Take(int take)
+        public PoshContextEntity<T> Take(int take)
         {
             _baseIQueryable = _baseIQueryable.Take(take);
             return this;
         }
 
-        public PoshContextQuery<T> Skip(int skip)
+        public T New()
+        {
+            return (T)Activator.CreateInstance(typeof(T));
+        }
+
+        public PoshContextEntity<T> Skip(int skip)
         {
             _baseIQueryable = _baseIQueryable.Skip(skip);
             return this;
         }
 
-        public PoshContextQuery<T> OrderBy(string orderBy)
+        public PoshContextEntity<T> OrderBy(string orderBy)
         {
             _baseIQueryable = _baseIQueryable.OrderBy(orderBy);
             return this;
@@ -258,10 +233,9 @@ namespace EFPosh
         {
             return _baseIQueryable.ToList();
         }
-        public object FirstOrDefault()
+        public T FirstOrDefault()
         {
             return _baseIQueryable.FirstOrDefault();
         }
-
     }
 }

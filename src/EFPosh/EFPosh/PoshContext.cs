@@ -19,16 +19,16 @@ namespace EFPosh
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            var entityMethod = typeof(ModelBuilder).GetMethods().Single(
-                                    m => m.Name.Equals("Entity") &&
-                                    m.IsGenericMethod == true &&
-                                    m.GetParameters().Count() == 0
-                                );
             foreach (var t in _types)
             {
-
-                //entityMethod.MakeGenericMethod(t.Type).Invoke(modelBuilder, new object[] { });
-                modelBuilder.Entity(t.Type);
+                if (t.Keyless)
+                {
+                    modelBuilder.Query(t.Type);
+                }
+                else
+                {
+                    modelBuilder.Entity(t.Type);
+                }
                 if (t.PrimaryKeys != null)
                 {
                     modelBuilder.Entity(t.Type).HasKey(t.PrimaryKeys);
@@ -37,20 +37,37 @@ namespace EFPosh
                 {
                     if (!string.IsNullOrEmpty(t.Schema))
                     {
-                        modelBuilder.Entity(t.Type).ToTable(t.TableName, t.Schema);
+                        if (t.Keyless)
+                        {
+                            modelBuilder.Query(t.Type).ToView(t.TableName, t.Schema);
+                        }
+                        else
+                        {
+                            modelBuilder.Entity(t.Type).ToTable(t.TableName, t.Schema);
+                        }
                     }
                     else
                     {
-                        modelBuilder.Entity(t.Type).ToTable(t.TableName);
+                        if (t.Keyless)
+                        {
+                            modelBuilder.Query(t.Type).ToView(t.TableName);
+                        }
+                        else
+                        {
+                            modelBuilder.Entity(t.Type).ToTable(t.TableName);
+                        }
                     }
                 }
                 else if (!string.IsNullOrEmpty(t.Schema))
                 {
-                    modelBuilder.Entity(t.Type).ToTable(t.Type.GetType().Name, t.Schema);
-                }
-                if (t.Keyless)
-                {
-                    modelBuilder.Entity(t.Type).HasNoKey();
+                    if (t.Keyless)
+                    {
+                        modelBuilder.Query(t.Type).ToView(t.Type.Name, t.Schema);
+                    }
+                    else
+                    {
+                        modelBuilder.Entity(t.Type).ToTable(t.Type.Name, t.Schema);
+                    }
                 }
             }
         }

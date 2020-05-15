@@ -37,7 +37,7 @@ $Tables = @(
 )
 
 $Context = New-EFPoshContext -SQLiteFile $DBFile -Entities $Tables -EnsureCreated
-return
+
 $NewObject = [TestTableTwo]::new()
 $NewObject.Name = 'MyTest'
 
@@ -49,6 +49,11 @@ $NewObject.Name = 'MyTest2'
 $Context.Add( $NewObject )
 $Context.SaveChanges()
 
+$Results1 = $Context.TestTableTwo.Name.Equals("MyTest2").And.MyOtherUniqueId.Equals(2).ToList()
+$results2 = $Context.TestTableTwo.Name.NotEquals("MyTest2").ToList()
+$Context.TestTableTwo.Name.Contains("2").ToList()
+
+return
 
 $QueryObject = New-EFPoshQuery -Type 'TestTableTwo'
 $QueryObject.Where("Name=@0",'MyTest')

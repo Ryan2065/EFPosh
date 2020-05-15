@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "EFPosh": {
+      "commandName": "Executable",
+      "executablePath": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "commandLineArgs": "-NoExit -File C:\\Users\\Ryan2\\OneDrive\\Code\\EFPosh\\src\\KillNormalPosh.ps1"
+    }
+  }
+}
