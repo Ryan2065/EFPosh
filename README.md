@@ -57,23 +57,19 @@ $Context.SaveChanges()
 You can query for existing objects:
 
 ``` PowerShell
-$QueryObject = New-EFPoshQuery -Type 'TestTableTwo'
-$QueryObject.Where("Name=@0",'MyTest')
-$QueryObject.ToList()
+$Context.TestTableTwo.Name.Equals("MyTest").ToList()
 ```
 
 You can find all objects in that table:
 
 ``` PowerShell
-$QueryObject = New-EFPoshQuery -Type 'TestTableTwo'
-$QueryObject.ToList()
+$Context.TestTableTwo.ToList()
 ```
 
 You can easily edit objects in the database:
 
 ``` PowerShell
-$QueryObject = New-EFPoshQuery -Type 'TestTableTwo'
-$Result = $QueryObject.FirstOrDefault()
+$Result = $Context.TestTableTwo.FirstOrDefault()
 $Result.Name = 'MyNewName'
 $Context.SaveChanges()
 ```
