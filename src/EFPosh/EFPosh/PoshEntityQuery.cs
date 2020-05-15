@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Linq.Dynamic.Core;
+using System.Linq.Dynamic;
 using System.Dynamic;
 using Microsoft.EntityFrameworkCore.Internal;
 
@@ -18,7 +18,22 @@ namespace EFPosh
         internal List<object> _whereParams;
         public PoshEntityQueryBase(DbContext context, string WhereQuery = "", List<object> whereParams = null)
         {
-            _baseIQueryable = context.Set<T>().AsQueryable();
+            var ets = context.Model.GetEntityTypes();
+            foreach(var et in ets)
+            {
+                if(et.ClrType == typeof(T))
+                {
+                    if (et.IsQueryType)
+                    {
+                        _baseIQueryable = context.Query<T>().AsQueryable();
+                    }
+                    else
+                    {
+                        _baseIQueryable = context.Set<T>().AsQueryable();
+                    }
+                }
+            }
+
             _baseContext = context;
             _query = WhereQuery;
             if(whereParams == null)
@@ -118,6 +133,12 @@ namespace EFPosh
         public PoshEntityJoiner<T> Contains(object equalValue)
         {
             _whereQuery += $"{_columnName}.Contains(@{_whereParams.Count}) ";
+            _whereParams.Add(equalValue);
+            return GetReturnObject();
+        }
+        public PoshEntityJoiner<T> NotContains(object equalValue)
+        {
+            _whereQuery += $"!{_columnName}.Contains(@{_whereParams.Count}) ";
             _whereParams.Add(equalValue);
             return GetReturnObject();
         }

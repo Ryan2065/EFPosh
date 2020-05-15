@@ -10,7 +10,6 @@ using System.Reflection;
 using System.IO;
 using System.Linq.Expressions;
 using System.Dynamic;
-using System.Linq.Dynamic.Core;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace EFPosh
@@ -53,15 +52,14 @@ namespace EFPosh
             {
                 case "SQLITE":
                     dbOptions.UseSqlite(connectionString);
-                    coll.AddEntityFrameworkSqlite();
+                    coll = coll.AddEntityFrameworkSqlite();
                     break;
                 case "MSSQL":
                 default:
                     dbOptions.UseSqlServer(connectionString);
-                    coll.AddEntityFrameworkSqlServer();
+                    coll = coll.AddEntityFrameworkSqlServer();
                     break;
             }
-            coll = coll.AddEntityFrameworkSqlite();
             var sp = BuildServiceProvider(coll);
             dbOptions.UseInternalServiceProvider(sp);
             var dbContext = new PoshContext(dbOptions.Options, Types);
