@@ -43,7 +43,8 @@ namespace EFPosh
             string connectionString,
             string dbType,
             PoshEntity[] Types,
-            bool EnsureCreated
+            bool EnsureCreated,
+            PoshEntityRelationship[] Relationships = null
         )
         {
             var dbOptions = new DbContextOptionsBuilder<PoshContext>();
@@ -62,7 +63,7 @@ namespace EFPosh
             }
             var sp = BuildServiceProvider(coll);
             dbOptions.UseInternalServiceProvider(sp);
-            var dbContext = new PoshContext(dbOptions.Options, Types);
+            var dbContext = new PoshContext(dbOptions.Options, Types, Relationships);
             if (EnsureCreated)
             {
                 dbContext.Database.EnsureCreated();

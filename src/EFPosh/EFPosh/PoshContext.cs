@@ -7,9 +7,11 @@ namespace EFPosh
     public class PoshContext : DbContext
     {
         private PoshEntity[] _types;
-        public PoshContext(DbContextOptions options, PoshEntity[] Types) : base(options)
+        private PoshEntityRelationship[] _relationships;
+        public PoshContext(DbContextOptions options, PoshEntity[] Types, PoshEntityRelationship[] Relationships) : base(options)
         {
             _types = Types;
+            _relationships = Relationships;
         }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)

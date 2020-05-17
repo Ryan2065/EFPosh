@@ -66,6 +66,11 @@ namespace EFPosh
             _baseIQueryable = _baseIQueryable.OrderBy(orderBy);
             return this;
         }
+        public PoshEntityQueryBase<T> Distinct()
+        {
+            _baseIQueryable = _baseIQueryable.Distinct();
+            return this;
+        }
         public List<T> ToList()
         {
             if(!string.IsNullOrEmpty(_query))
@@ -82,23 +87,35 @@ namespace EFPosh
             }
             return _baseIQueryable.FirstOrDefault();
         }
+        public bool Any()
+        {
+            if (!string.IsNullOrEmpty(_query))
+            {
+                _baseIQueryable.Where(_query, _whereParams.ToArray());
+            }
+            return _baseIQueryable.Any();
+        }
     }
     public class PoshEntityColumn<T> : PoshEntityQueryBase<T>
         where T : class
     {
-        public PoshEntityColumn(DbContext dbContext, string WhereQuery, List<object> whereParams):base(dbContext, WhereQuery, whereParams) { }
+        public Dictionary<string, object> _members;
+        public PoshEntityColumn(DbContext dbContext, string WhereQuery, List<object> whereParams):base(dbContext, WhereQuery, whereParams)
+        {
+            _members = new Dictionary<string, object>();
+            var props = typeof(T).GetProperties();
+            foreach(var p in props)
+            {
+                _members.Add(p.Name.ToLower(), new PoshEntityQuery<T>(p.Name, _query, _baseContext, _whereParams));
+            }
+        }
+        
         public override bool TryGetMember(GetMemberBinder binder,
                                   out object result)
         {
-            result = null;
-            var property = typeof(T).GetProperties()
-                        .Where(p => p.Name.ToUpper().Equals(binder.Name.ToUpper()))
-                        .FirstOrDefault();
-            if(property != null)
-            {
-                result = new PoshEntityQuery<T>(property.Name, _query, _baseContext, _whereParams);
-            }
-            return result == null ? false : true;
+            
+            string name = binder.Name.ToLower();
+            return _members.TryGetValue(name, out result);
         }
     }
     public class PoshEntityQuery<T> where T : class
