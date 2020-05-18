@@ -47,12 +47,18 @@ Function New-EFPoshContext{
         [Parameter(Mandatory = $false, ParameterSetName = "ConnectionString")]
         [Parameter(Mandatory = $false, ParameterSetName = "SQLite")]
         [Parameter(Mandatory = $false, ParameterSetName = "MSSQL")]
-        [switch]$EnsureCreated
+        [switch]$EnsureCreated,
+        [Parameter(Mandatory = $false, ParameterSetName = "ConnectionString")]
+        [Parameter(Mandatory = $false, ParameterSetName = "SQLite")]
+        [Parameter(Mandatory = $false, ParameterSetName = "MSSQL")]
+        [switch]$ReadOnly
     )
     $Script:LatestDBContext = $null
     $Script:LatestDBContext = [EFPosh.PoshContextInteractions]::new()
     $boolEnsureCreated = $false
     if($EnsureCreated){ $boolEnsureCreated = $true }
+    $boolReadOnly = $false
+    if($ReadOnly) { $boolReadOnly = $true }
     if($PSCmdlet.ParameterSetName -eq 'SQLite'){
         $DBType = 'SQLite'
         $ConnectionString = "Filename=$($SQLiteFile)"
@@ -61,6 +67,6 @@ Function New-EFPoshContext{
         $DBType = 'MSSQL'
         $ConnectionString = "Server=$($MSSQLServer);Database=$($MSSQLDatabase);Integrated Security=$($MSSQLIntegratedSecurity)"
     }
-    $null = $Script:LatestDBContext.NewPoshContext($ConnectionString, $DBType, $Entities, $boolEnsureCreated)
+    $null = $Script:LatestDBContext.NewPoshContext($ConnectionString, $DBType, $Entities, $boolEnsureCreated, $boolReadOnly)
     return $Script:LatestDBContext
 }

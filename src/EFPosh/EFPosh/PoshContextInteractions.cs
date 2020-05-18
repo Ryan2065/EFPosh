@@ -44,6 +44,7 @@ namespace EFPosh
             string dbType,
             PoshEntity[] Types,
             bool EnsureCreated,
+            bool ReadOnly,
             PoshEntityRelationship[] Relationships = null
         )
         {
@@ -67,6 +68,10 @@ namespace EFPosh
             if (EnsureCreated)
             {
                 dbContext.Database.EnsureCreated();
+            }
+            if (ReadOnly)
+            {
+                dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
             }
             _poshContext = dbContext;
         }
