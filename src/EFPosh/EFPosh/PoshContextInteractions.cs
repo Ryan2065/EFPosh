@@ -44,9 +44,11 @@ namespace EFPosh
             string dbType,
             PoshEntity[] Types,
             bool EnsureCreated,
-            PoshEntityRelationship[] Relationships = null
+            bool ReadOnly
         )
         {
+
+            PoshEntityRelationship[] Relationships = null;
             var dbOptions = new DbContextOptionsBuilder<PoshContext>();
             IServiceCollection coll = new ServiceCollection();
             switch (dbType.ToUpper())
@@ -68,6 +70,10 @@ namespace EFPosh
             {
                 dbContext.Database.EnsureCreated();
             }
+            if (ReadOnly)
+            {
+                dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+            }
             _poshContext = dbContext;
         }
         
@@ -80,7 +86,7 @@ namespace EFPosh
         public PoshEntityColumn<T> NewQuery<T>()
             where T : class
         {
-            return new PoshEntityColumn<T>(_poshContext, "", new List<object>() );
+            return new PoshEntityColumn<T>(_poshContext, "", new List<object>(), "", new List<object>() );
         }
         
         private object ConvertType(object obj)
@@ -187,6 +193,10 @@ namespace EFPosh
                     .Invoke(this, null);
             }
             return result == null ? false : true;
+        }
+        public List<string> GetEntities()
+        {
+            return _poshContext.Model.GetEntityTypes().Select(p => p.Name).ToList();
         }
     }
     public class PoshContextEntity<T> where T : class

@@ -1,4 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Internal;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using System;
 using System.Linq;
 
@@ -69,6 +71,37 @@ namespace EFPosh
                     else
                     {
                         modelBuilder.Entity(t.Type).ToTable(t.Type.Name, t.Schema);
+                    }
+                }
+            }
+            if(_relationships != null)
+            {
+                foreach(var r in _relationships)
+                {
+                    var sourceType = modelBuilder.Model.GetEntityTypes().Where(p => p.Name.Equals(r.SourceTypeName)).FirstOrDefault();
+                    ReferenceNavigationBuilder modelType = null;
+                    if (sourceType.IsQueryType)
+                    {
+                        modelType = modelBuilder.Query(sourceType.ClrType).HasOne(r.SourceRelationshipProperty);
+                    }
+                    else
+                    {
+                        modelType = modelBuilder.Entity(sourceType.ClrType).HasOne(r.SourceRelationshipProperty);
+                        
+                    }
+                    switch (r.RelationshipType)
+                    {
+                        case PoshEntityRelationshipType.OneToOne:
+                            modelType.WithOne(r.TargetRelationshipProperty)
+                                .HasForeignKey(r.SourceKey)
+                                .HasPrincipalKey(r.TargetKey);
+                            break;
+                        case PoshEntityRelationshipType.OneToMany:
+                        default:
+                            modelType.WithMany(r.TargetRelationshipProperty)
+                                .HasForeignKey(r.SourceKey)
+                                .HasPrincipalKey(r.TargetKey);
+                            break;
                     }
                 }
             }
