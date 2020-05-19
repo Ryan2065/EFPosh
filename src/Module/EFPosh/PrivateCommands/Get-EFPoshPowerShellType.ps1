@@ -10,37 +10,37 @@ Function Get-EFPoshPowerShellType {
     }
     Switch($ColumnType){
         "bigint" { $strType += "long" }
-        "binary" { $strType += "byte[]" }
+        "binary" { $strType = "[byte[]" }
         "bit" { $strType += "bool" }
-        "char" { $strType += "string" }
+        "char" { $strType = "[string" }
         "date" { $strType += "DateTime" }
         "datetime" { $strType += "DateTime" }
         "datetime2" { $strType += "DateTime" }
         "datetimeoffset" { $strType += "DateTimeOffset" }
         "decimal" { $strType += "decimal" }
         "float" { $strType += "double" }
-        "image" { $strType += "byte[]" }
+        "image" { $strType = "[byte[]" }
         "int" { $strType += "int" }
         "money" { $strType += "decimal" }
-        "nchar" { $strType += "string" }
-        "ntext" { $strType += "string" }
+        "nchar" { $strType = "[string" }
+        "ntext" { $strType = "[string" }
         "numeric" { $strType += "decimal" }
-        "nvarchar" { $strType += "string" }
+        "nvarchar" { $strType = "[string" }
         "real" { $strType += "float" }
         "smalldatetime" { $strType += "DateTime" }
         "smallint" { $strType += "short" }
         "smallmoney" { $strType += "decimal" }
-        "text" { $strType += "string" }
+        "text" { $strType = "[string" }
         "time" { $strType += "TimeSpan" }
         "timestamp" { $strType += "long" }
         "tinyint" { $strType += "byte" }
         "uniqueidentifier" { $strType += "Guid" }
-        "varbinary" { $strType += "byte[]" }
-        "varchar" { $strType += "string" }
-        "xml" { $strType += "string" }
+        "varbinary" { $strType = "[byte[]" }
+        "varchar" { $strType = "[string" }
+        "xml" { $strType = "[string" }
     }
     $strType += "]"
-    if($Nullable){
+    if($strType.contains('[Nullable')){
         $strType += "]"
     }
     return $strType

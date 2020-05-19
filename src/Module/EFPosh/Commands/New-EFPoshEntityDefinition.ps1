@@ -40,6 +40,7 @@ Function New-EFPoshEntityDefinition{
         [Parameter(Mandatory = $false)]
         [string]$Schema
     )
+    Write-Verbose "Creating Entity Definition for type $($Type)"
     $TypeObject = Get-EFPoshType -TypeName $Type
     if($null -eq $TypeObject){
         throw 'Could not find provided type. Please make sure it is imported'
