@@ -53,6 +53,8 @@ $Results1 = $Context.TestTableTwo.Name.Equals("MyTest2").And.MyOtherUniqueId.Equ
 $results2 = $Context.TestTableTwo.Name.NotEquals("MyTest2").ToList()
 $Context.TestTableTwo.Name.Contains("2").ToList()
 
+
+
 return
 
 $QueryObject = New-EFPoshQuery -Type 'TestTableTwo'

@@ -82,7 +82,7 @@ Function Add-EFPoshQuery {
         }
     }
     if($BoolSetComparision){
-        $Script:EFPoshQuery = $Script:EFPoshQuery."$($PSCmdlet.ParameterSetName)"($ComparisionValue)
+        $Script:EFPoshQuery = $Script:EFPoshQuery."$($Property)"."$($PSCmdlet.ParameterSetName)"($ComparisionValue)
     }
     else{
         throw "This should never be hit - if you see this error, the cool thing I did didn't work - Create an issue on GitHub with this error"
