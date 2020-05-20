@@ -51,6 +51,10 @@ namespace EFPosh
             _fromSql = fromSql;
             _fromSqlParams = fromSqlParams;
         }
+        public List<string> GetProperties()
+        {
+            return typeof(T).GetProperties().Select(p => p.Name).ToList();
+        }
         public PoshEntityQueryBase<T> AsNoTracking()
         {
             _baseIQueryable = _baseIQueryable.AsNoTracking();
@@ -174,14 +178,32 @@ namespace EFPosh
         }
         public PoshEntityJoiner<T> Contains(object equalValue)
         {
-            _whereQuery += $"{_columnName}.Contains(@{_whereParams.Count}) ";
-            _whereParams.Add(equalValue);
+            var equalValueType = equalValue.GetType();
+            if (equalValueType.IsArray)
+            {
+                _whereQuery += $"@{_whereParams.Count}.Contains({_columnName}) ";
+                _whereParams.Add(equalValue);
+            }
+            else
+            {
+                _whereQuery += $"{_columnName}.Contains(@{_whereParams.Count}) ";
+                _whereParams.Add(equalValue);
+            }
             return GetReturnObject();
         }
         public PoshEntityJoiner<T> NotContains(object equalValue)
         {
-            _whereQuery += $"!{_columnName}.Contains(@{_whereParams.Count}) ";
-            _whereParams.Add(equalValue);
+            var equalValueType = equalValue.GetType();
+            if (equalValueType.IsArray)
+            {
+                _whereQuery += $"!@{_whereParams.Count}.Contains({_columnName}) ";
+                _whereParams.Add(equalValue);
+            }
+            else
+            {
+                _whereQuery += $"!{_columnName}.Contains(@{_whereParams.Count}) ";
+                _whereParams.Add(equalValue);
+            }
             return GetReturnObject();
         }
         public PoshEntityJoiner<T> StartsWith(object equalValue)

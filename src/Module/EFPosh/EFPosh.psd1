@@ -12,7 +12,7 @@
 RootModule = '.\EFPosh.psm1'
 
 # Version number of this module.
-ModuleVersion = '0.2.0'
+ModuleVersion = '0.2.1'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -74,7 +74,9 @@ FunctionsToExport = @(
     'New-EFPoshEntityDefinition', 
     'Start-EFPoshModel', 
     'Add-EFPoshModelEntity',
-    'New-EFPoshQuery'
+    'New-EFPoshQuery',
+    'Add-EFPoshQuery',
+    'Start-EFPoshQuery'
 )
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.

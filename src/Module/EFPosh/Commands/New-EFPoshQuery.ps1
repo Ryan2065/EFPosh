@@ -18,7 +18,19 @@ Function New-EFPoshQuery {
                 }
             }
         })]
-        [string]$Entity
+        [string]$Entity,
+        [Parameter(Mandatory = $false)]
+        [string]$FromQuery,
+        [object[]]$FromQueryParams
     )
-    return $DBContext."$Entity"
+    $Script:EFPoshQuery = $null
+    $Script:EFPoshQuery = $DBContext."$Entity"
+    if($FromQuery){
+        if($FromQueryParams){
+            $Script:EFPoshQuery = $Script:EFPoshQuery.FromQuery($FromQuery, $FromQueryParams)
+        }
+        else{
+            $Script:EFPoshQuery = $Script:EFPoshQuery.FromQuery($FromQuery)
+        }
+    }
 }
