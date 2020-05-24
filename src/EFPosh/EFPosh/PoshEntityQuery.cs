@@ -75,6 +75,12 @@ namespace EFPosh
             _baseIQueryable = _baseIQueryable.OrderBy(orderBy);
             return this;
         }
+
+        public PoshEntityQueryBase<T> Include(string includeName)
+        {
+            _baseIQueryable = _baseIQueryable.Include(includeName);
+            return this;
+        }
         public PoshEntityQueryBase<T> Distinct()
         {
             _baseIQueryable = _baseIQueryable.Distinct();

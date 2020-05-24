@@ -108,11 +108,10 @@ namespace EFPosh
             string dbType,
             PoshEntity[] Types,
             bool EnsureCreated,
-            bool ReadOnly
+            bool ReadOnly,
+            PoshEntityRelationship[] Relationships = null
         )
         {
-
-            PoshEntityRelationship[] Relationships = null;
             NewDbContext<PoshContext>(connectionString, dbType, EnsureCreated, ReadOnly, Types, Relationships);
         }
         

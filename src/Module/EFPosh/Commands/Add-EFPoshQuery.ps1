@@ -1,4 +1,53 @@
 Function Add-EFPoshQuery {
+    <#
+    .SYNOPSIS
+    Builds the IQueryable
+    
+    .DESCRIPTION
+    Will build an IQueryable after New-EFPoshQuery is called - Auto complete of Property only works if New-EFPoshQuery is run
+    
+    .PARAMETER Property
+    Name of the property you wish to query against
+    
+    .PARAMETER Equals
+    Builds an Equals expression
+    
+    .PARAMETER NotEquals
+    Builds a NotEquals expression
+    
+    .PARAMETER Contains
+    If an array is passed, it turns into a SQL query of "Property In ( '','','' )" - however, if the object passed in is not an array, it defaults to PropertyName like '%Value%'
+    
+    .PARAMETER NotContains
+    If an array is passed, it turns into a SQL query of "Property Not In ( '','','' )" - however, if the object passed in is not an array, it defaults to PropertyName not like '%Value%'
+    
+    .PARAMETER StartsWith
+    Builds a StartsWith queryable
+    
+    .PARAMETER EndsWith
+    Builds an EndsWith queryable
+    
+    .PARAMETER GreaterThan
+    Builds a GreaterThan queryable
+    
+    .PARAMETER LessThan
+    Builds a LessThan queryable
+    
+    .PARAMETER GreaterThanOrEqualTo
+    Builds a GreaterThanOrEqualTo queryable
+    
+    .PARAMETER LessThanOrEqualTo
+    Builds a LessThanOrEqualTo queryable
+    
+    .PARAMETER And
+    Tells the system another expression will be added as an and
+    
+    .PARAMETER Or
+    Tells the system another expression will be added as an or
+    
+    .NOTES
+    .Author: Ryan Ephgrave
+    #>
     Param(
         [Parameter(Mandatory=$true, ParameterSetName = 'Equals')]
         [Parameter(Mandatory=$true, ParameterSetName = 'NotEquals')]
