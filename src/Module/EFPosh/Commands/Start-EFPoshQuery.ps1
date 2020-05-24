@@ -85,7 +85,7 @@ Function Start-EFPoshQuery{
     }
     if($Include){
         foreach($instance in $Include){
-            if(-not ( [string]::IsNullOrEmpty($instance )){
+            if(-not ( [string]::IsNullOrEmpty($instance ))){
                 $Script:EFPoshQuery = $Script:EFPoshQuery.Include($instance)
             }
         }
