@@ -39,17 +39,17 @@ namespace EFPosh
             return (IServiceProvider)BuildServiceProviderMethod.Invoke(null, new object[] { services, false });
         }
         private DbContext _poshContext;
-        public void NewPoshContext(
+        public void NewDbContext<T>(
             string connectionString,
             string dbType,
-            PoshEntity[] Types,
             bool EnsureCreated,
-            bool ReadOnly
+            bool ReadOnly,
+            PoshEntity[] Types = null,
+            PoshEntityRelationship[] Relationships = null
         )
+            where T : DbContext
         {
-
-            PoshEntityRelationship[] Relationships = null;
-            var dbOptions = new DbContextOptionsBuilder<PoshContext>();
+            var dbOptions = new DbContextOptionsBuilder<T>();
             IServiceCollection coll = new ServiceCollection();
             switch (dbType.ToUpper())
             {
@@ -65,7 +65,15 @@ namespace EFPosh
             }
             var sp = BuildServiceProvider(coll);
             dbOptions.UseInternalServiceProvider(sp);
-            var dbContext = new PoshContext(dbOptions.Options, Types, Relationships);
+            DbContext dbContext = null;
+            if(typeof(T) == typeof(PoshContext))
+            {
+                dbContext = new PoshContext(dbOptions.Options, Types, Relationships);
+            }
+            else
+            {
+                dbContext = (DbContext)Activator.CreateInstance(typeof(T), new object[] { dbOptions.Options });
+            }
             if (EnsureCreated)
             {
                 dbContext.Database.EnsureCreated();
@@ -75,6 +83,36 @@ namespace EFPosh
                 dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
             }
             _poshContext = dbContext;
+        }
+        public void ExistingContext(
+            string connectionString,
+            string dbType,
+            bool EnsureCreated,
+            bool ReadOnly,
+            string dllPath,
+            string ContextClassName
+        )
+        {
+            var assembly = Assembly.LoadFile(dllPath);
+            var type = assembly.GetTypes().Where(p => p.Name.ToLower().Equals(ContextClassName.ToLower()) ).FirstOrDefault();
+            PoshEntityRelationship[] Relationships = null;
+            PoshEntity[] Types = null;
+            typeof(PoshContextInteractions)
+                    .GetMethod("NewDbContext")
+                    .MakeGenericMethod(type)
+                    .Invoke(this, new object[] { connectionString, dbType, EnsureCreated, ReadOnly, Types, Relationships });
+            
+        }
+        public void NewPoshContext(
+            string connectionString,
+            string dbType,
+            PoshEntity[] Types,
+            bool EnsureCreated,
+            bool ReadOnly,
+            PoshEntityRelationship[] Relationships = null
+        )
+        {
+            NewDbContext<PoshContext>(connectionString, dbType, EnsureCreated, ReadOnly, Types, Relationships);
         }
         
         public DbContext DBContext
@@ -179,11 +217,11 @@ namespace EFPosh
         public override bool TryGetMember(GetMemberBinder binder,
                                   out object result)
         {
-            var requestedType = _poshContext.Model
+            var typeList = _poshContext.Model
                                 .GetEntityTypes()
-                                .Where(p => p.Name.ToUpper().Equals(binder.Name.ToUpper()))
                                 .Select(p => p.ClrType)
-                                .FirstOrDefault();
+                                .ToList();
+            var requestedType = typeList.Where(p => p.Name.ToUpper().Equals(binder.Name.ToUpper())).FirstOrDefault();
             result = null;
             if(requestedType != null)
             {
@@ -196,7 +234,7 @@ namespace EFPosh
         }
         public List<string> GetEntities()
         {
-            return _poshContext.Model.GetEntityTypes().Select(p => p.Name).ToList();
+            return _poshContext.Model.GetEntityTypes().Select(p => p.ClrType).Select(d => d.Name).ToList();
         }
     }
     public class PoshContextEntity<T> where T : class

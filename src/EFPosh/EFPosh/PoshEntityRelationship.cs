@@ -20,7 +20,6 @@ namespace EFPosh
     {
         OneToOne,
         OneToMany,
-        ManyToOne,
-        ManyToMany
+        ManyToOne
     }
 }

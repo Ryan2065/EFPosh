@@ -1,4 +1,26 @@
 Function Add-EFPoshModelEntity {
+    <#
+    .SYNOPSIS
+    Used to generate a DB schema - adds an entity to the model. Currently only works with MSSql
+    
+    .DESCRIPTION
+    Used to generate a DB schema - adds an entity to the model
+    
+    .PARAMETER DBSchema
+    Schema the entity is in - defaults to dbo
+    
+    .PARAMETER EntityType
+    Is the entity a Table or View? Only used for narrowing auto-complete of Name.
+    
+    .PARAMETER Name
+    Name of the View/Table
+    
+    .PARAMETER PropertyList
+    List of properties you want modeled - defaults to all
+    
+    .NOTES
+    .Author: Ryan Ephgrave
+    #>
     Param(
         [Parameter(Mandatory = $false)]
         [ArgumentCompleter({

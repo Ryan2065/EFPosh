@@ -1,4 +1,35 @@
 Function Start-EFPoshModel {
+    <#
+    .SYNOPSIS
+    Starts a modeling of an existing database
+    
+    .DESCRIPTION
+    Starts the modeling of an existing database
+    
+    .PARAMETER MSSQLServer
+    SQL Server instance name
+    
+    .PARAMETER MSSQLDatabase
+    SQL Server database
+    
+    .PARAMETER MSSQLIntegratedSecurity
+    Integrated security
+    
+    .PARAMETER FilePath
+    Path to output the file
+    
+    .PARAMETER Overwrite
+    Overwrite an existing file or add to it?
+    
+    .PARAMETER EntitesToMap
+    List of entities to map. Optional, can be provided with Add-EFPoshModelEntity also
+    
+    .PARAMETER AllEntities
+    Switch - Will model the entire database. Only recommended for small databases
+    
+    .NOTES
+    .Author: Ryan Ephgrave
+    #>
     Param(
         [Parameter(Mandatory = $true, ParameterSetName = "MSSQL")]
         [string]$MSSQLServer,

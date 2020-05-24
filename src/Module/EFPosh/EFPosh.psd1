@@ -12,7 +12,7 @@
 RootModule = '.\EFPosh.psm1'
 
 # Version number of this module.
-ModuleVersion = '0.2.1'
+ModuleVersion = '1.0.0'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -115,7 +115,7 @@ PrivateData = @{
         # IconUri = ''
 
         # ReleaseNotes of this module
-        ReleaseNotes = 'Adding code generation pieces'
+        ReleaseNotes = 'Fixed bugs with Contains'
 
         # Prerelease string of this module
         # Prerelease = ''
