@@ -12,6 +12,22 @@ if($null -eq ( Get-Module EFPosh )){
 $ErrorActionPreference = 'Stop'
 Import-Module "$ScriptLocation\Module\EFPosh" -Force
 
+$Context = & 'C:\users\ryan2\OneDrive\Code\EFPosh\src\bin\ModelDB.ps1'
+New-EFPoshQuery -DBContext $Context -Entity v_Collection
+$Collections = Start-EFPoshQuery -ToList
+New-EFPoshQuery -DBContext $Context -Entity v_Collection
+Add-EFPoshQuery -Property Name -Contains $Collections.Name
+Start-EFPoshQuery -ToList
+
+return
+
+$Assembly = "$ScriptLocation\EFPosh\EFPosh.InformationSchemaDB\bin\Debug\netstandard2.0\EFPosh.InformationSchemaDB.dll"
+$ContextClass = 'InformationSchemaDBContext'
+$MSSQLServer = 'Lab-CM.home.lab'
+$MSSQLDatabase = 'CM_PS1'
+$MSSQLIntegratedSecurity = $true
+$Context = New-EFPoshContext -MSSQLServer $MSSQLServer -MSSQLDatabase $MSSQLDatabase -MSSQLIntegratedSecurity $MSSQLIntegratedSecurity -AssemblyFile $Assembly -ClassName $ContextClass
+return
 $DBFile = "$ScriptLocation\bin\MyDatabase.sqlite"
 
 $SQLiteConnectionString = "Filename=$DBFile"

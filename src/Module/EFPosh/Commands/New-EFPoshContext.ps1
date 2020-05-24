@@ -40,9 +40,9 @@ Function New-EFPoshContext{
         [string]$MSSQLDatabase,
         [Parameter(Mandatory = $false, ParameterSetName = "MSSQL")]
         [bool]$MSSQLIntegratedSecurity = $false,
-        [Parameter(Mandatory = $true, ParameterSetName = "ConnectionString")]
-        [Parameter(Mandatory = $true, ParameterSetName = "SQLite")]
-        [Parameter(Mandatory = $true, ParameterSetName = "MSSQL")]
+        [Parameter(Mandatory = $false, ParameterSetName = "ConnectionString")]
+        [Parameter(Mandatory = $false, ParameterSetName = "SQLite")]
+        [Parameter(Mandatory = $false, ParameterSetName = "MSSQL")]
         [EFPosh.PoshEntity[]]$Entities,
         [Parameter(Mandatory = $false, ParameterSetName = "ConnectionString")]
         [Parameter(Mandatory = $false, ParameterSetName = "SQLite")]
@@ -51,8 +51,24 @@ Function New-EFPoshContext{
         [Parameter(Mandatory = $false, ParameterSetName = "ConnectionString")]
         [Parameter(Mandatory = $false, ParameterSetName = "SQLite")]
         [Parameter(Mandatory = $false, ParameterSetName = "MSSQL")]
-        [switch]$ReadOnly
+        [switch]$ReadOnly,
+        [Parameter(Mandatory = $false, ParameterSetName = "ConnectionString")]
+        [Parameter(Mandatory = $false, ParameterSetName = "SQLite")]
+        [Parameter(Mandatory = $false, ParameterSetName = "MSSQL")]
+        [string]$AssemblyFile,
+        [Parameter(Mandatory = $false, ParameterSetName = "ConnectionString")]
+        [Parameter(Mandatory = $false, ParameterSetName = "SQLite")]
+        [Parameter(Mandatory = $false, ParameterSetName = "MSSQL")]
+        [string]$ClassName
     )
+    if($Entities -and $AssemblyFile){
+        throw 'Entities parameter can not be used with AssemblyFile - please use one or the other'
+        return
+    }
+    if($AssemblyFile -and -not $ClassName){
+        throw 'You must provide the ClassName to look for in the assembly'
+        return
+    }
     $Script:LatestDBContext = $null
     $Script:LatestDBContext = [EFPosh.PoshContextInteractions]::new()
     $boolEnsureCreated = $false
@@ -67,6 +83,11 @@ Function New-EFPoshContext{
         $DBType = 'MSSQL'
         $ConnectionString = "Server=$($MSSQLServer);Database=$($MSSQLDatabase);Integrated Security=$($MSSQLIntegratedSecurity)"
     }
-    $null = $Script:LatestDBContext.NewPoshContext($ConnectionString, $DBType, $Entities, $boolEnsureCreated, $boolReadOnly)
+    if([string]::IsNullOrEmpty($AssemblyFile)){
+        $null = $Script:LatestDBContext.NewPoshContext($ConnectionString, $DBType, $Entities, $boolEnsureCreated, $boolReadOnly)
+    }
+    else{
+        $null = $Script:LatestDBContext.ExistingContext($ConnectionString, $DBType, $boolEnsureCreated, $boolReadOnly, $AssemblyFile, $ClassName)
+    }
     return $Script:LatestDBContext
 }

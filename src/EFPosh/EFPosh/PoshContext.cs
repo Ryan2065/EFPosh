@@ -79,30 +79,43 @@ namespace EFPosh
                 foreach(var r in _relationships)
                 {
                     var sourceType = modelBuilder.Model.GetEntityTypes().Where(p => p.Name.Equals(r.SourceTypeName)).FirstOrDefault();
-                    ReferenceNavigationBuilder modelType = null;
-                    if (sourceType.IsQueryType)
+                    if (r.RelationshipType == PoshEntityRelationshipType.ManyToOne)
                     {
-                        modelType = modelBuilder.Query(sourceType.ClrType).HasOne(r.SourceRelationshipProperty);
+                        modelBuilder.Entity(sourceType.ClrType)
+                            .HasMany(r.SourceRelationshipProperty)
+                            .WithOne(r.TargetRelationshipProperty)
+                            .HasForeignKey(r.SourceKey)
+                            .HasPrincipalKey(r.TargetKey);
                     }
                     else
                     {
-                        modelType = modelBuilder.Entity(sourceType.ClrType).HasOne(r.SourceRelationshipProperty);
-                        
+                        ReferenceNavigationBuilder modelType = null;
+                        if (sourceType.IsQueryType)
+                        {
+                            modelType = modelBuilder.Query(sourceType.ClrType).HasOne(r.SourceRelationshipProperty);
+                        }
+                        else
+                        {
+                            modelType = modelBuilder.Entity(sourceType.ClrType).HasOne(r.SourceRelationshipProperty);
+
+                        }
+                        switch (r.RelationshipType)
+                        {
+                            case PoshEntityRelationshipType.OneToOne:
+                                modelType.WithOne(r.TargetRelationshipProperty)
+                                    .HasForeignKey(r.SourceKey)
+                                    .HasPrincipalKey(r.TargetKey);
+                                break;
+                            case PoshEntityRelationshipType.OneToMany:
+                            default:
+                                modelType.WithMany(r.TargetRelationshipProperty)
+                                    .HasForeignKey(r.SourceKey)
+                                    .HasPrincipalKey(r.TargetKey);
+                                break;
+                        }
                     }
-                    switch (r.RelationshipType)
-                    {
-                        case PoshEntityRelationshipType.OneToOne:
-                            modelType.WithOne(r.TargetRelationshipProperty)
-                                .HasForeignKey(r.SourceKey)
-                                .HasPrincipalKey(r.TargetKey);
-                            break;
-                        case PoshEntityRelationshipType.OneToMany:
-                        default:
-                            modelType.WithMany(r.TargetRelationshipProperty)
-                                .HasForeignKey(r.SourceKey)
-                                .HasPrincipalKey(r.TargetKey);
-                            break;
-                    }
+                    
+                    
                 }
             }
         }

@@ -181,7 +181,7 @@ namespace EFPosh
             var equalValueType = equalValue.GetType();
             if (equalValueType.IsArray)
             {
-                _whereQuery += $"@{_whereParams.Count}.Contains({_columnName}) ";
+                _whereQuery += $"@{_whereParams.Count}.Contains(outerIt.{_columnName}) ";
                 _whereParams.Add(equalValue);
             }
             else
