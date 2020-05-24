@@ -76,7 +76,8 @@ FunctionsToExport = @(
     'Add-EFPoshModelEntity',
     'New-EFPoshQuery',
     'Add-EFPoshQuery',
-    'Start-EFPoshQuery'
+    'Start-EFPoshQuery',
+    'New-EFPoshEntityRelationship'
 )
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.

@@ -12,22 +12,6 @@ if($null -eq ( Get-Module EFPosh )){
 $ErrorActionPreference = 'Stop'
 Import-Module "$ScriptLocation\Module\EFPosh" -Force
 
-$Context = & 'C:\users\ryan2\OneDrive\Code\EFPosh\src\bin\ModelDB.ps1'
-New-EFPoshQuery -DBContext $Context -Entity v_Collection
-$Collections = Start-EFPoshQuery -ToList
-New-EFPoshQuery -DBContext $Context -Entity v_Collection
-Add-EFPoshQuery -Property Name -Contains $Collections.Name
-Start-EFPoshQuery -ToList
-
-return
-
-$Assembly = "$ScriptLocation\EFPosh\EFPosh.InformationSchemaDB\bin\Debug\netstandard2.0\EFPosh.InformationSchemaDB.dll"
-$ContextClass = 'InformationSchemaDBContext'
-$MSSQLServer = 'Lab-CM.home.lab'
-$MSSQLDatabase = 'CM_PS1'
-$MSSQLIntegratedSecurity = $true
-$Context = New-EFPoshContext -MSSQLServer $MSSQLServer -MSSQLDatabase $MSSQLDatabase -MSSQLIntegratedSecurity $MSSQLIntegratedSecurity -AssemblyFile $Assembly -ClassName $ContextClass
-return
 $DBFile = "$ScriptLocation\bin\MyDatabase.sqlite"
 
 $SQLiteConnectionString = "Filename=$DBFile"
@@ -38,13 +22,16 @@ if(Test-Path $DBFile){
 }
 
 Class TestTableOne {
-    [string]$MyUniqueId
+    [int]$MyUniqueId
     [string]$Name
+    [TestTableTwo]$RelationshipOne
 }
 
 Class TestTableTwo {
     [int]$MyOtherUniqueId
+    [int]$MyUniqueId
     [string]$Name
+    [TestTableOne]$RelationshipTwo
 }
 
 $Tables = @(
@@ -52,22 +39,20 @@ $Tables = @(
     ( New-EFPoshEntityDefinition -Type 'TestTableTwo' -PrimaryKey 'MyOtherUniqueId' )
 )
 
+#$Relationship = @( New-EFPoshEntityRelationship -SourceTypeName 'TestTableOne' -TargetTypeName 'TestTableTwo' -RelationshipType 'OneToOne' -SourceKey MyUniqueId -TargetKey MyUniqueId2 -SourceRelationshipProperty 'RelationshipOne' -TargetRelationshipProperty 'RelationshipTwo' )
+
 $Context = New-EFPoshContext -SQLiteFile $DBFile -Entities $Tables -EnsureCreated
+
+$One = [TestTableOne]::new()
+$One.Name = 'NewNameTest'
+$Context.Add( $One )
+$Context.SaveChanges()
 
 $NewObject = [TestTableTwo]::new()
 $NewObject.Name = 'MyTest'
-
+$NewObject.MyUniqueId = $One.MyUniqueId
 $Context.Add( $NewObject )
 $Context.SaveChanges()
-
-$NewObject = [TestTableTwo]::new()
-$NewObject.Name = 'MyTest2'
-$Context.Add( $NewObject )
-$Context.SaveChanges()
-
-$Results1 = $Context.TestTableTwo.Name.Equals("MyTest2").And.MyOtherUniqueId.Equals(2).ToList()
-$results2 = $Context.TestTableTwo.Name.NotEquals("MyTest2").ToList()
-$Context.TestTableTwo.Name.Contains("2").ToList()
 
 
 

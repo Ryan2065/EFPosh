@@ -44,8 +44,7 @@ namespace EFPosh
             string dbType,
             bool EnsureCreated,
             bool ReadOnly,
-            PoshEntity[] Types = null,
-            PoshEntityRelationship[] Relationships = null
+            PoshEntity[] Types = null
         )
             where T : DbContext
         {
@@ -68,7 +67,7 @@ namespace EFPosh
             DbContext dbContext = null;
             if(typeof(T) == typeof(PoshContext))
             {
-                dbContext = new PoshContext(dbOptions.Options, Types, Relationships);
+                dbContext = new PoshContext(dbOptions.Options, Types);
             }
             else
             {
@@ -95,12 +94,11 @@ namespace EFPosh
         {
             var assembly = Assembly.LoadFile(dllPath);
             var type = assembly.GetTypes().Where(p => p.Name.ToLower().Equals(ContextClassName.ToLower()) ).FirstOrDefault();
-            PoshEntityRelationship[] Relationships = null;
             PoshEntity[] Types = null;
             typeof(PoshContextInteractions)
                     .GetMethod("NewDbContext")
                     .MakeGenericMethod(type)
-                    .Invoke(this, new object[] { connectionString, dbType, EnsureCreated, ReadOnly, Types, Relationships });
+                    .Invoke(this, new object[] { connectionString, dbType, EnsureCreated, ReadOnly, Types });
             
         }
         public void NewPoshContext(
@@ -108,11 +106,10 @@ namespace EFPosh
             string dbType,
             PoshEntity[] Types,
             bool EnsureCreated,
-            bool ReadOnly,
-            PoshEntityRelationship[] Relationships = null
+            bool ReadOnly
         )
         {
-            NewDbContext<PoshContext>(connectionString, dbType, EnsureCreated, ReadOnly, Types, Relationships);
+            NewDbContext<PoshContext>(connectionString, dbType, EnsureCreated, ReadOnly, Types);
         }
         
         public DbContext DBContext

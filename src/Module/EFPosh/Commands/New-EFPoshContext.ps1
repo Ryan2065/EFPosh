@@ -39,9 +39,6 @@ Function New-EFPoshContext{
     .PARAMETER ClassName
     If you have an entity framework Context dll - tell us the class that we're looking for (needs a DBOptions constructor)
 
-    .PARAMETER Relationships
-    Pre-Built relationship array - if you want to define foreign keys
-
     .EXAMPLE
     New-EFPoshContext -ConnectionString 'Filename=.\MyDatabase.sqlite' -DBType 'SQLite' -Types @('Table1','Table2') -EnsureCreated
     This will check if the file MyDatabase.sqlite exists, and if it doesn't create it with the DB schema for the provided types
@@ -83,11 +80,7 @@ Function New-EFPoshContext{
         [Parameter(Mandatory = $false, ParameterSetName = "ConnectionString")]
         [Parameter(Mandatory = $false, ParameterSetName = "SQLite")]
         [Parameter(Mandatory = $false, ParameterSetName = "MSSQL")]
-        [string]$ClassName,
-        [Parameter(Mandatory = $false, ParameterSetName = "ConnectionString")]
-        [Parameter(Mandatory = $false, ParameterSetName = "SQLite")]
-        [Parameter(Mandatory = $false, ParameterSetName = "MSSQL")]
-        [EFPosh.PoshEntityRelationship[]]$Relationships
+        [string]$ClassName
     )
     if($Entities -and $AssemblyFile){
         throw 'Entities parameter can not be used with AssemblyFile - please use one or the other'
@@ -112,7 +105,7 @@ Function New-EFPoshContext{
         $ConnectionString = "Server=$($MSSQLServer);Database=$($MSSQLDatabase);Integrated Security=$($MSSQLIntegratedSecurity)"
     }
     if([string]::IsNullOrEmpty($AssemblyFile)){
-        $null = $Script:LatestDBContext.NewPoshContext($ConnectionString, $DBType, $Entities, $boolEnsureCreated, $boolReadOnly, $Relationships)
+        $null = $Script:LatestDBContext.NewPoshContext($ConnectionString, $DBType, $Entities, $boolEnsureCreated, $boolReadOnly)
     }
     else{
         $null = $Script:LatestDBContext.ExistingContext($ConnectionString, $DBType, $boolEnsureCreated, $boolReadOnly, $AssemblyFile, $ClassName)
