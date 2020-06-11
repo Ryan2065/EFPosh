@@ -19,8 +19,10 @@ namespace EFPosh
         internal List<object> _whereParams;
         internal string _fromSql;
         internal List<object> _fromSqlParams;
-        public PoshEntityQueryBase(DbContext context, string WhereQuery = "", List<object> whereParams = null, string fromSql = "", List<object>fromSqlParams = null)
+        internal ActionRunner _runner;
+        public PoshEntityQueryBase(DbContext context, ActionRunner runner, string WhereQuery = "", List<object> whereParams = null, string fromSql = "", List<object>fromSqlParams = null)
         {
+            _runner = runner;
             var ets = context.Model.GetEntityTypes();
             foreach(var et in ets)
             {
@@ -114,23 +116,23 @@ namespace EFPosh
         public List<T> ToList()
         {
             UpdateIQueryable();
-            return _baseIQueryable.ToList();
+            return _runner.RunAction(() => _baseIQueryable.ToList());
         }
         public T FirstOrDefault()
         {
             UpdateIQueryable();
-            return _baseIQueryable.FirstOrDefault();
+            return _runner.RunAction(() => _baseIQueryable.FirstOrDefault());
         }
         public bool Any()
         {
             UpdateIQueryable();
-            return _baseIQueryable.Any();
+            return _runner.RunAction(() => _baseIQueryable.Any());
         }
     }
     public class PoshEntityColumn<T> : PoshEntityQueryBase<T>
         where T : class
     {
-        public PoshEntityColumn(DbContext dbContext, string WhereQuery, List<object> whereParams, string fromSql, List<object> fromSqlParams):base(dbContext, WhereQuery, whereParams, fromSql, fromSqlParams)
+        public PoshEntityColumn(DbContext dbContext, ActionRunner runner, string WhereQuery, List<object> whereParams, string fromSql, List<object> fromSqlParams):base(dbContext, runner, WhereQuery, whereParams, fromSql, fromSqlParams)
         {
 
         }
@@ -143,7 +145,7 @@ namespace EFPosh
             var propObject = typeof(T).GetProperties().Where(p => p.Name.ToLower().Equals(name)).FirstOrDefault();
             if(propObject != null)
             {
-                result = new PoshEntityQuery<T>(propObject.Name, _query, _baseContext, _whereParams, _fromSql, _fromSqlParams);
+                result = new PoshEntityQuery<T>(propObject.Name, _runner, _query, _baseContext, _whereParams, _fromSql, _fromSqlParams);
                 return true;
             }
             return false;
@@ -157,8 +159,10 @@ namespace EFPosh
         private List<object> _whereParams;
         private string _fromSql;
         private List<object> _fromSqlParams;
-        public PoshEntityQuery(string columnName, string WhereQuery, DbContext dbContext, List<object> whereParams, string fromSql, List<object> fromSqlParams)
+        private ActionRunner _runner;
+        public PoshEntityQuery(string columnName, ActionRunner runner, string WhereQuery, DbContext dbContext, List<object> whereParams, string fromSql, List<object> fromSqlParams)
         {
+            _runner = runner;
             _whereQuery = WhereQuery;
             _columnName = columnName;
             _dbContext = dbContext;
@@ -168,7 +172,7 @@ namespace EFPosh
         }
         private PoshEntityJoiner<T> GetReturnObject()
         {
-            return new PoshEntityJoiner<T>(_dbContext, _whereQuery, _whereParams, _fromSql, _fromSqlParams);
+            return new PoshEntityJoiner<T>(_dbContext, _runner, _whereQuery, _whereParams, _fromSql, _fromSqlParams);
         }
         public new PoshEntityJoiner<T> Equals(object equalValue)
         {
@@ -252,10 +256,10 @@ namespace EFPosh
     public class PoshEntityJoiner<T> : PoshEntityQueryBase<T>
         where T : class
     {
-        public PoshEntityJoiner(DbContext dbContext, string WhereQuery, List<object> whereParams, string fromSql, List<object> fromSqlParams) : base(dbContext, WhereQuery, whereParams, fromSql, fromSqlParams) { }
+        public PoshEntityJoiner(DbContext dbContext, ActionRunner runner, string WhereQuery, List<object> whereParams, string fromSql, List<object> fromSqlParams) : base(dbContext, runner, WhereQuery, whereParams, fromSql, fromSqlParams) { }
         private PoshEntityColumn<T> GetReturnValue()
         {
-            return new PoshEntityColumn<T>(_baseContext, _query, _whereParams, _fromSql, _fromSqlParams);
+            return new PoshEntityColumn<T>(_baseContext, _runner, _query, _whereParams, _fromSql, _fromSqlParams);
         }
         public PoshEntityColumn<T> And
         {

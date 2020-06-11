@@ -11,6 +11,7 @@ using System.IO;
 using System.Linq.Expressions;
 using System.Dynamic;
 using Microsoft.Extensions.DependencyInjection;
+using System.Security;
 
 namespace EFPosh
 {
@@ -38,6 +39,8 @@ namespace EFPosh
             var BuildServiceProviderMethod = t.GetMethod(nameof(BuildServiceProvider), new Type[] { typeof(IServiceCollection), typeof(bool) });
             return (IServiceProvider)BuildServiceProviderMethod.Invoke(null, new object[] { services, false });
         }
+        public PoshCredential Credential { get; set; }
+        private ActionRunner _runner;
         private DbContext _poshContext;
         public void NewDbContext<T>(
             string connectionString,
@@ -48,6 +51,7 @@ namespace EFPosh
         )
             where T : DbContext
         {
+            _runner = new ActionRunner(Credential);
             var dbOptions = new DbContextOptionsBuilder<T>();
             IServiceCollection coll = new ServiceCollection();
             switch (dbType.ToUpper())
@@ -75,7 +79,7 @@ namespace EFPosh
             }
             if (EnsureCreated)
             {
-                dbContext.Database.EnsureCreated();
+                _runner.RunAction(() => dbContext.Database.EnsureCreated());
             }
             if (ReadOnly)
             {
@@ -121,7 +125,7 @@ namespace EFPosh
         public PoshEntityColumn<T> NewQuery<T>()
             where T : class
         {
-            return new PoshEntityColumn<T>(_poshContext, "", new List<object>(), "", new List<object>() );
+            return new PoshEntityColumn<T>(_poshContext, _runner, "", new List<object>(), "", new List<object>() );
         }
         
         private object ConvertType(object obj)
@@ -153,6 +157,7 @@ namespace EFPosh
             try
             {
                 _poshContext.Add(obj);
+
             }
             catch (InvalidCastException)
             {
@@ -179,7 +184,7 @@ namespace EFPosh
 
         public void SaveChanges()
         {
-            _poshContext.SaveChanges();
+            _runner.RunAction(() => _poshContext.SaveChanges());
         }
 
         public void Remove(object obj)
@@ -232,54 +237,6 @@ namespace EFPosh
         public List<string> GetEntities()
         {
             return _poshContext.Model.GetEntityTypes().Select(p => p.ClrType).Select(d => d.Name).ToList();
-        }
-    }
-    public class PoshContextEntity<T> where T : class
-    {
-        public PoshContextEntity(DbContext context)
-        {
-            _baseIQueryable = context.Set<T>().AsQueryable();
-        }
-        private IQueryable<T> _baseIQueryable;
-        public void AsNoTracking()
-        {
-            _baseIQueryable = _baseIQueryable.AsNoTracking();
-        }
-        public PoshContextEntity<T> WhereQuery(string whereQuery, object[] QueryObjects)
-        {
-            _baseIQueryable = _baseIQueryable.Where(whereQuery, QueryObjects);
-            return this;
-        }
-        public PoshContextEntity<T> Take(int take)
-        {
-            _baseIQueryable = _baseIQueryable.Take(take);
-            return this;
-        }
-
-        public T New()
-        {
-            return (T)Activator.CreateInstance(typeof(T));
-        }
-
-        public PoshContextEntity<T> Skip(int skip)
-        {
-            _baseIQueryable = _baseIQueryable.Skip(skip);
-            return this;
-        }
-
-        public PoshContextEntity<T> OrderBy(string orderBy)
-        {
-            _baseIQueryable = _baseIQueryable.OrderBy(orderBy);
-            return this;
-        }
-
-        public List<T> ToList()
-        {
-            return _baseIQueryable.ToList();
-        }
-        public T FirstOrDefault()
-        {
-            return _baseIQueryable.FirstOrDefault();
         }
     }
 }
