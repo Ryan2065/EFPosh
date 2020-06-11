@@ -8,13 +8,13 @@ dotnet publish --self-contained --configuration release --framework net472
 
 $Files = ".\EFPosh\bin\Release\net472\publish\*"
 
-if(Test-Path "$PSScriptRoot\Module\EFPosh\bin"){
-    & cmd /c rd "$PSScriptRoot\Module\EFPosh\bin\" /s /q
+if(Test-Path "$PSScriptRoot\Module\EFPosh\Dependencies"){
+    & cmd /c rd "$PSScriptRoot\Module\EFPosh\Dependencies\" /s /q
 }
 
-$null = New-Item "$PSScriptRoot\Module\EFPosh\bin" -ItemType Directory -Force
+$null = New-Item "$PSScriptRoot\Module\EFPosh\Dependencies" -ItemType Directory -Force
 
-Copy-Item -Path $Files -Destination "$PSScriptRoot\Module\EFPosh\bin\" -Force -Recurse
+Copy-Item -Path $Files -Destination "$PSScriptRoot\Module\EFPosh\Dependencies\" -Force -Recurse
 
 Push-Location $Location
 

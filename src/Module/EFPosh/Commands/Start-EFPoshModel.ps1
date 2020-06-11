@@ -49,7 +49,7 @@ Function Start-EFPoshModel {
         [pscredential]$Credential,
         [Parameter(Mandatory = $false, ParameterSetName = "MSSQL")]
         [ValidateSet('Interactive', 'Network', 'Batch', 'Service', 'Unlock', 'NetworkCleartext', 'NewCredentials')]
-        [string]$LogonType = 'Network'
+        [string]$LogonType = 'NewCredentials'
     )
     Write-Verbose 'Creating new Model object'
     $ParentDirectory = ( Get-Item $PSScriptRoot ).Parent.FullName

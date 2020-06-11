@@ -4,7 +4,7 @@ Param(
     [bool]$IntegratedSecurity = '##IntegratedSecurity##',
     [PScredential]$Credential,
     [ValidateSet('Interactive', 'Network', 'Batch', 'Service', 'Unlock', 'NetworkCleartext', 'NewCredentials')]
-    [string]$LogonType = 'Network'
+    [string]$LogonType = 'NewCredentials'
 )
 
 if($null -eq ( Get-Module EFPosh )){

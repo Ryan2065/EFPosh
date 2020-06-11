@@ -89,7 +89,7 @@ Function New-EFPoshContext{
         [Parameter(Mandatory = $false, ParameterSetName = "SQLite")]
         [Parameter(Mandatory = $false, ParameterSetName = "MSSQL")]
         [ValidateSet('Interactive', 'Network', 'Batch', 'Service', 'Unlock', 'NetworkCleartext', 'NewCredentials')]
-        [string]$LogonType = 'Network'
+        [string]$LogonType = 'NewCredentials'
     )
     if($Entities -and $AssemblyFile){
         throw 'Entities parameter can not be used with AssemblyFile - please use one or the other'
