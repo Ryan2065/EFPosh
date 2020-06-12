@@ -177,4 +177,30 @@ Describe 'Can query with functions' {
             $Result.Id | Should -BeLessOrEqual 50
         }
     }
+    It 'Queries with And in <Name>' -TestCases $Global:DbContexts {
+        Param(
+            [string]$Name,
+            [EFPosh.PoshContextInteractions]$DbContext
+        )
+        New-EFPoshQuery -DBContext $DbContext -Entity 'TableOne'
+        Add-EFPoshQuery -Property Id -Equals 1 -And
+        Add-EFPoshQuery -Property Name -Contains 'Test'
+        $Results = Start-EFposhQuery -ToList
+        $Results.Count | Should -Be 1
+        foreach($result in $Results) {
+            $Result.Id | Should -Be 1
+        }
+    }
+    It 'Queries with Or in <Name>' -TestCases $Global:DbContexts {
+        Param(
+            [string]$Name,
+            [EFPosh.PoshContextInteractions]$DbContext
+        )
+        New-EFPoshQuery -DBContext $DbContext -Entity 'TableOne'
+        Add-EFPoshQuery -Property Id -Equals 1 -Or
+        Add-EFPoshQuery -Property Id -Equals 2 -Or
+        Add-EFPoshQuery -Property Id -Equals 3
+        $Results = Start-EFposhQuery -ToList
+        $Results.Count | Should -Be 3
+    }
 }
