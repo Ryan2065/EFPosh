@@ -150,6 +150,11 @@ namespace EFPosh
             }
             return false;
         }
+
+        public T New()
+        {
+            return (T)Activator.CreateInstance(typeof(T));
+        }
     }
     public class PoshEntityQuery<T> where T : class
     {
@@ -206,7 +211,7 @@ namespace EFPosh
             var equalValueType = equalValue.GetType();
             if (equalValueType.IsArray)
             {
-                _whereQuery += $"!@{_whereParams.Count}.Contains({_columnName}) ";
+                _whereQuery += $"!@{_whereParams.Count}.Contains(outerIt.{_columnName}) ";
                 _whereParams.Add(equalValue);
             }
             else

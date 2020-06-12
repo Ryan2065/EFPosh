@@ -157,7 +157,6 @@ namespace EFPosh
             try
             {
                 _poshContext.Add(obj);
-
             }
             catch (InvalidCastException)
             {
