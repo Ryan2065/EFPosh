@@ -38,7 +38,9 @@ Function New-EFPoshEntityDefinition{
         [Parameter(Mandatory=$false)]
         [string]$TableName,
         [Parameter(Mandatory = $false)]
-        [string]$Schema
+        [string]$Schema,
+        [Parameter(Mandatory = $false)]
+        [string]$FromSQL
     )
     Write-Verbose "Creating Entity Definition for type $($Type)"
     $TypeObject = Get-EFPoshType -TypeName $Type
@@ -53,5 +55,8 @@ Function New-EFPoshEntityDefinition{
     }
     $newEntity.Schema = $Schema
     $newEntity.TableName = $TableName
+    if($FromSQL){
+        $newEntity.FromSql = $FromSQL
+    }
     return $newEntity
 }
