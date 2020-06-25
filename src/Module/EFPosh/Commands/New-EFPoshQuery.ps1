@@ -53,10 +53,10 @@ Function New-EFPoshQuery {
     $Script:EFPoshQuery = $DBContext."$Entity"
     if($FromQuery){
         if($FromQueryParams){
-            $Script:EFPoshQuery = $Script:EFPoshQuery.FromQuery($FromQuery, $FromQueryParams)
+            $Script:EFPoshQuery = $Script:EFPoshQuery.FromSql($FromQuery, $FromQueryParams)
         }
         else{
-            $Script:EFPoshQuery = $Script:EFPoshQuery.FromQuery($FromQuery)
+            $Script:EFPoshQuery = $Script:EFPoshQuery.FromSql($FromQuery)
         }
     }
 }

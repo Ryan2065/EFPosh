@@ -3,7 +3,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+#if NETFRAMEWORK
 using System.Linq.Dynamic;
+#else
+using System.Linq.Dynamic.Core;
+#endif
 using System.Dynamic;
 using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.EntityFrameworkCore.Query.ResultOperators.Internal;

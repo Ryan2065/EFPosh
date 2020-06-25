@@ -17,19 +17,26 @@ namespace EFPosh
 {
     public class PoshContextInteractions : DynamicObject
     {
+        private static List<string> dllPathsToCheck;
+        private Dictionary<string, string> FromSqlEntities;
         public PoshContextInteractions()
         {
             AppDomain currentDomain = AppDomain.CurrentDomain;
+            dllPathsToCheck = new List<string>();
+            dllPathsToCheck.Add(Path.GetDirectoryName(typeof(PoshContextInteractions).Assembly.Location));
             currentDomain.AssemblyResolve += new ResolveEventHandler(PoshResolveEventHandler);
+            FromSqlEntities = new Dictionary<string, string>();
         }
         private static Assembly PoshResolveEventHandler(object sender, ResolveEventArgs args)
         {
             var dllNeeded = args.Name.Split(',')[0] + ".dll";
-            var directoryInfo = Path.GetDirectoryName(typeof(PoshContextInteractions).Assembly.Location);
-            var fullDLLPath = Path.Combine(directoryInfo, dllNeeded);
-            if (File.Exists(fullDLLPath))
+            foreach(var directoryInfo in dllPathsToCheck)
             {
-                return Assembly.LoadFrom(fullDLLPath);
+                var fullDLLPath = Path.Combine(directoryInfo, dllNeeded);
+                if (File.Exists(fullDLLPath))
+                {
+                    return Assembly.LoadFrom(fullDLLPath);
+                }
             }
             return null;
         }
@@ -86,6 +93,13 @@ namespace EFPosh
                 dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
             }
             _poshContext = dbContext;
+            foreach(var t in Types)
+            {
+                if (!String.IsNullOrEmpty(t.FromSql))
+                {
+                    FromSqlEntities.Add(t.Type.Name, t.FromSql);
+                }
+            }
         }
         public void ExistingContext(
             string connectionString,
@@ -97,6 +111,7 @@ namespace EFPosh
         )
         {
             var assembly = Assembly.LoadFile(dllPath);
+            dllPathsToCheck.Add(Path.GetDirectoryName(assembly.Location));
             var type = assembly.GetTypes().Where(p => p.Name.ToLower().Equals(ContextClassName.ToLower()) ).FirstOrDefault();
             PoshEntity[] Types = null;
             typeof(PoshContextInteractions)
@@ -125,7 +140,12 @@ namespace EFPosh
         public PoshEntityColumn<T> NewQuery<T>()
             where T : class
         {
-            return new PoshEntityColumn<T>(_poshContext, _runner, "", new List<object>(), "", new List<object>() );
+            var returnObject = new PoshEntityColumn<T>(_poshContext, _runner, "", new List<object>(), "", new List<object>());
+            if (FromSqlEntities.ContainsKey(nameof(T)))
+            {
+                returnObject.FromSql(FromSqlEntities[nameof(T)]);
+            }
+            return returnObject;
         }
         
         private object ConvertType(object obj)
@@ -230,6 +250,7 @@ namespace EFPosh
                     .GetMethod("NewQuery")
                     .MakeGenericMethod(requestedType)
                     .Invoke(this, null);
+
             }
             return result == null ? false : true;
         }

@@ -1,5 +1,6 @@
 $Location = Get-Location
 $ErrorActionPreference = 'Stop'
+$null = . "$PSScriptRoot\ClearCompiledFiles.ps1"
 Push-Location "$PSScriptRoot\EFPosh"
 
 dotnet publish --self-contained --configuration release --framework net472

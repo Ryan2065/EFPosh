@@ -4,7 +4,7 @@ $ErrorActionPreference = 'Continue'
 
 Write-Verbose 'Building module with newest version'
 $ParentDirectory = ( Get-Item $PSScriptRoot ).Parent.FullName
-$null = . "$ParentDirectory\buildModule.ps1"
+. "$ParentDirectory\buildModule.ps1"
 
 Import-Module "$ParentDirectory\Module\EFPosh" -Force
 

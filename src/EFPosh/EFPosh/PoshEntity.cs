@@ -13,5 +13,6 @@ namespace EFPosh
         public bool Keyless { get; set; } = false;
         public string TableName { get; set; }
         public string Schema { get; set; }
+        public string FromSql { get; set; }
     }
 }
