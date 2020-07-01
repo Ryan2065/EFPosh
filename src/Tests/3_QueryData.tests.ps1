@@ -213,6 +213,7 @@ Describe 'Can query with functions' {
         $Results = Start-EFposhQuery -FirstOrDefault -Select 'Id'
         $Results.Name | Should -Be $null
         $Results.Id | Should -Be 1
+        @($Results).Count | Should -Be 1
     }
     It 'Honors select list in <Name>' -TestCases $Global:DbContexts {
         Param(

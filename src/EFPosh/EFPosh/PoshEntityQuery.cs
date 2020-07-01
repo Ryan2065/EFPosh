@@ -12,6 +12,7 @@ using System.Dynamic;
 using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.EntityFrameworkCore.Query.ResultOperators.Internal;
 using System.Linq.Expressions;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 
 namespace EFPosh
 {
@@ -25,6 +26,7 @@ namespace EFPosh
         internal string _fromSql;
         internal List<object> _fromSqlParams;
         internal ActionRunner _runner;
+        internal string[] _selectProperties;
         public PoshEntityQueryBase(DbContext context, ActionRunner runner, string WhereQuery = "", List<object> whereParams = null, string fromSql = "", List<object>fromSqlParams = null)
         {
             _runner = runner;
@@ -100,7 +102,9 @@ namespace EFPosh
             List<MemberAssignment> assignments = new List<MemberAssignment>();
             foreach (var prop in properties)
             {
-                var mi = typeof(T).GetProperty(prop);
+                var mi = typeof(T).GetProperties()
+                    .Where(p => p.Name.ToLower().Equals(prop.ToLower()))
+                    .FirstOrDefault();
                 var xOriginal = Expression.Property(xParameter, mi);
                 assignments.Add(Expression.Bind(mi, xOriginal));
             }
@@ -109,7 +113,7 @@ namespace EFPosh
         }
         public PoshEntityQueryBase<T> Select(string[] properties)
         {
-            _baseIQueryable = _baseIQueryable.Select((CreateSelectLambda(properties)));
+            _selectProperties = properties;
             return this;
         }
         public PoshEntityColumn<T> And
@@ -151,6 +155,10 @@ namespace EFPosh
             if (!string.IsNullOrEmpty(_query))
             {
                 _baseIQueryable = _baseIQueryable.Where(_query, _whereParams.ToArray());
+            }
+            if (_selectProperties != null)
+            {
+                _baseIQueryable = _baseIQueryable.Select((CreateSelectLambda(_selectProperties)));
             }
         }
         public List<T> ToList()
