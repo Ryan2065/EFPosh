@@ -212,6 +212,16 @@ Describe 'Can query with functions' {
         Add-EFPoshQuery -Property Id -Equals 1
         $Results = Start-EFposhQuery -FirstOrDefault -Select 'Id'
         $Results.Name | Should -Be $null
-        $Results.Id | Should -Not -Be $null
+        $Results.Id | Should -Be 1
+    }
+    It 'Honors select list in <Name>' -TestCases $Global:DbContexts {
+        Param(
+            [string]$Name,
+            [EFPosh.PoshContextInteractions]$DbContext
+        )
+        New-EFPoshQuery -DBContext $DbContext -Entity 'TableOne'
+        $Results = Start-EFposhQuery -FirstOrDefault -Select 'Id'
+        $Results[0].Name | Should -Be $null
+        $Results[0].Id | Should -Be 1
     }
 }

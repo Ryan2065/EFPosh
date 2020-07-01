@@ -112,7 +112,22 @@ namespace EFPosh
             _baseIQueryable = _baseIQueryable.Select((CreateSelectLambda(properties)));
             return this;
         }
-
+        public PoshEntityColumn<T> And
+        {
+            get
+            {
+                _query += " && ";
+                return new PoshEntityColumn<T>(_baseContext, _runner, _query, _whereParams, _fromSql, _fromSqlParams);
+            }
+        }
+        public PoshEntityColumn<T> Or
+        {
+            get
+            {
+                _query += " || ";
+                return new PoshEntityColumn<T>(_baseContext, _runner, _query, _whereParams, _fromSql, _fromSqlParams);
+            }
+        }
         public PoshEntityQueryBase<T> FromSql(string query, object[] objParams = null)
         {
             _fromSql = query;
@@ -200,23 +215,23 @@ namespace EFPosh
             _fromSql = fromSql;
             _fromSqlParams = fromSqlParams;
         }
-        private PoshEntityJoiner<T> GetReturnObject()
+        private PoshEntityQueryBase<T> GetReturnObject()
         {
-            return new PoshEntityJoiner<T>(_dbContext, _runner, _whereQuery, _whereParams, _fromSql, _fromSqlParams);
+            return new PoshEntityQueryBase<T>(_dbContext, _runner, _whereQuery, _whereParams, _fromSql, _fromSqlParams);
         }
-        public new PoshEntityJoiner<T> Equals(object equalValue)
+        public new PoshEntityQueryBase<T> Equals(object equalValue)
         {
             _whereQuery += $"{_columnName}=@{_whereParams.Count} ";
             _whereParams.Add(equalValue);
             return GetReturnObject();
         }
-        public PoshEntityJoiner<T> NotEquals(object equalValue)
+        public PoshEntityQueryBase<T> NotEquals(object equalValue)
         {
             _whereQuery += $"{_columnName}!=@{_whereParams.Count} ";
             _whereParams.Add(equalValue);
             return GetReturnObject();
         }
-        public PoshEntityJoiner<T> Contains(object equalValue)
+        public PoshEntityQueryBase<T> Contains(object equalValue)
         {
             var equalValueType = equalValue.GetType();
             if (equalValueType.IsArray)
@@ -231,7 +246,7 @@ namespace EFPosh
             }
             return GetReturnObject();
         }
-        public PoshEntityJoiner<T> NotContains(object equalValue)
+        public PoshEntityQueryBase<T> NotContains(object equalValue)
         {
             var equalValueType = equalValue.GetType();
             if (equalValueType.IsArray)
@@ -246,67 +261,42 @@ namespace EFPosh
             }
             return GetReturnObject();
         }
-        public PoshEntityJoiner<T> StartsWith(object equalValue)
+        public PoshEntityQueryBase<T> StartsWith(object equalValue)
         {
             _whereQuery += $"{_columnName}.StartsWith(@{_whereParams.Count}) ";
             _whereParams.Add(equalValue);
             return GetReturnObject();
         }
-        public PoshEntityJoiner<T> EndsWith(object equalValue)
+        public PoshEntityQueryBase<T> EndsWith(object equalValue)
         {
             _whereQuery += $"{_columnName}.EndsWith(@{_whereParams.Count}) ";
             _whereParams.Add(equalValue);
             return GetReturnObject();
         }
-        public PoshEntityJoiner<T> GreaterThan(object equalValue)
+        public PoshEntityQueryBase<T> GreaterThan(object equalValue)
         {
             _whereQuery += $"{_columnName} > @{_whereParams.Count} ";
             _whereParams.Add(equalValue);
             return GetReturnObject();
         }
-        public PoshEntityJoiner<T> LessThan(object equalValue)
+        public PoshEntityQueryBase<T> LessThan(object equalValue)
         {
             _whereQuery += $"{_columnName} < @{_whereParams.Count} ";
             _whereParams.Add(equalValue);
             return GetReturnObject();
         }
-        public PoshEntityJoiner<T> GreaterThanOrEqualTo(object equalValue)
+        public PoshEntityQueryBase<T> GreaterThanOrEqualTo(object equalValue)
         {
             _whereQuery += $"{_columnName} >= @{_whereParams.Count} ";
             _whereParams.Add(equalValue);
             return GetReturnObject();
         }
-        public PoshEntityJoiner<T> LessThanOrEqualTo(object equalValue)
+        public PoshEntityQueryBase<T> LessThanOrEqualTo(object equalValue)
         {
             _whereQuery += $"{_columnName} <= @{_whereParams.Count} ";
             _whereParams.Add(equalValue);
             return GetReturnObject();
         }
     }
-    public class PoshEntityJoiner<T> : PoshEntityQueryBase<T>
-        where T : class
-    {
-        public PoshEntityJoiner(DbContext dbContext, ActionRunner runner, string WhereQuery, List<object> whereParams, string fromSql, List<object> fromSqlParams) : base(dbContext, runner, WhereQuery, whereParams, fromSql, fromSqlParams) { }
-        private PoshEntityColumn<T> GetReturnValue()
-        {
-            return new PoshEntityColumn<T>(_baseContext, _runner, _query, _whereParams, _fromSql, _fromSqlParams);
-        }
-        public PoshEntityColumn<T> And
-        {
-            get
-            {
-                _query += " && ";
-                return GetReturnValue();
-            }
-        }
-        
-        public PoshEntityColumn<T> Or
-        {
-            get
-            {
-                _query += " || ";
-                return GetReturnValue();
-            }
-        }
-    }
+
 }
