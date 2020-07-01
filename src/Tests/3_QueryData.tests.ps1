@@ -203,4 +203,15 @@ Describe 'Can query with functions' {
         $Results = Start-EFposhQuery -ToList
         $Results.Count | Should -Be 3
     }
+    It 'Honors select list in <Name>' -TestCases $Global:DbContexts {
+        Param(
+            [string]$Name,
+            [EFPosh.PoshContextInteractions]$DbContext
+        )
+        New-EFPoshQuery -DBContext $DbContext -Entity 'TableOne'
+        Add-EFPoshQuery -Property Id -Equals 1
+        $Results = Start-EFposhQuery -FirstOrDefault -Select 'Id'
+        $Results.Name | Should -Be $null
+        $Results.Id | Should -Not -Be $null
+    }
 }

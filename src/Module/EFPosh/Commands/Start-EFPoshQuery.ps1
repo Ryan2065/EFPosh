@@ -70,6 +70,10 @@ Function Start-EFPoshQuery{
         [Parameter(Mandatory=$false, ParameterSetName = 'Any')]
         [switch]$Distinct,
         [Parameter(Mandatory=$false, ParameterSetName = 'ToList')]
+        [Parameter(Mandatory=$false, ParameterSetName = 'FirstOrDefault')]
+        [Parameter(Mandatory=$false, ParameterSetName = 'Any')]
+        [string[]]$Select,
+        [Parameter(Mandatory=$false, ParameterSetName = 'ToList')]
         [switch]$ToList,
         [Parameter(Mandatory=$true, ParameterSetName = 'FirstOrDefault')]
         [switch]$FirstOrDefault,
@@ -107,6 +111,9 @@ Function Start-EFPoshQuery{
     }
     if($Distinct){
         $Script:EFPoshQuery = $Script:EFPoshQuery.Distinct()
+    }
+    if($Select){
+        $Script:EFPoshQuery = $Script:EFPoshQuery.Select($Select)
     }
     $tempQuery = $Script:EFPoshQuery
     $Script:EFPoshQuery = $null

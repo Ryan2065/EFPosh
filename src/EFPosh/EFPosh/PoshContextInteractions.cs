@@ -141,9 +141,9 @@ namespace EFPosh
             where T : class
         {
             var returnObject = new PoshEntityColumn<T>(_poshContext, _runner, "", new List<object>(), "", new List<object>());
-            if (FromSqlEntities.ContainsKey(nameof(T)))
+            if (FromSqlEntities.ContainsKey(typeof(T).Name))
             {
-                returnObject.FromSql(FromSqlEntities[nameof(T)]);
+                returnObject.FromSql(FromSqlEntities[typeof(T).Name]);
             }
             return returnObject;
         }

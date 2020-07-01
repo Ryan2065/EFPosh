@@ -25,6 +25,11 @@ Class TableThree{
     [TableTwo]$TableTwo
 }
 
+Class FromSQLClass{
+    [int]$Id
+    [string]$Name
+}
+
 $ContextParams = @{
     'Entities' = @(
         (New-EFPoshEntityDefinition -Type 'TableOne' -PrimaryKeys 'Id'),
@@ -53,6 +58,7 @@ switch ($DbType.ToUpper()) {
         $Context = New-EFPoshContext -SQLiteFile $FilePath @ContextParams
     }
     'MSSQL' {
+        $ContextParams['Entities'] += New-EFPoshEntityDefinition -Type 'FromSQLClass' -Keyless -FromSql 'Select * from TableOne'
         $DbName = 'EFPoshTests'
         if($WithCredentials){
             $ContextParams['Credential'] = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $TestSettings.'MSSQLAlternativeCredentials-User', ($TestSettings.'MSSQLAlternativeCredentials-Pw' | ConvertTo-SecureString)

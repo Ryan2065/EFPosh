@@ -11,6 +11,7 @@ using System.Linq.Dynamic.Core;
 using System.Dynamic;
 using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.EntityFrameworkCore.Query.ResultOperators.Internal;
+using System.Linq.Expressions;
 
 namespace EFPosh
 {
@@ -92,6 +93,26 @@ namespace EFPosh
             _baseIQueryable = _baseIQueryable.Distinct();
             return this;
         }
+        private Expression<Func<T,T>> CreateSelectLambda(string[] properties)
+        {
+            var xParameter = Expression.Parameter(typeof(T), "o");
+            var xNew = Expression.New(typeof(T));
+            List<MemberAssignment> assignments = new List<MemberAssignment>();
+            foreach (var prop in properties)
+            {
+                var mi = typeof(T).GetProperty(prop);
+                var xOriginal = Expression.Property(xParameter, mi);
+                assignments.Add(Expression.Bind(mi, xOriginal));
+            }
+            var xInit = Expression.MemberInit(xNew, assignments);
+            return Expression.Lambda<Func<T, T>>(xInit, xParameter);
+        }
+        public PoshEntityQueryBase<T> Select(string[] properties)
+        {
+            _baseIQueryable = _baseIQueryable.Select((CreateSelectLambda(properties)));
+            return this;
+        }
+
         public PoshEntityQueryBase<T> FromSql(string query, object[] objParams = null)
         {
             _fromSql = query;
