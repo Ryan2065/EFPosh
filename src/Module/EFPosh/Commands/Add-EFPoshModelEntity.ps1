@@ -39,7 +39,7 @@ Function Add-EFPoshModelEntity {
         })]
         [string]$DBSchema = 'dbo',
         [Parameter(Mandatory=$false)]
-        [ValidateSet('Table', 'View')]
+        [ValidateSet('Table', 'View', 'Function')]
         [string]$EntityType,
         [Parameter(Mandatory = $true)]
         [ArgumentCompleter({
@@ -95,7 +95,13 @@ Function Add-EFPoshModelEntity {
         return
     }
     $Context = $Script:ContextFileSettings.Context
-    $SchemaInfo = $Context.MSSQLInformationSchemaColumns.TABLE_SCHEMA.Equals($DBSchema).And.TABLE_NAME.Equals($Name).ToList()
+    if($EntityType -eq 'Function'){
+        $SchemaInfo = $Context.MSSQLInformationSchemaColumns.FromSql('Select * FROM Information_Schema.Routine_Columns').TABLE_SCHEMA.Equals($DBSchema).And.TABLE_NAME.Equals($Name).ToList()
+    }
+    else{
+        $SchemaInfo = $Context.MSSQLInformationSchemaColumns.TABLE_SCHEMA.Equals($DBSchema).And.TABLE_NAME.Equals($Name).ToList()
+    }
+    
     if($null -eq $PropertyList) {
         $PropertyList = $SchemaInfo.COLUMN_NAME
     }
