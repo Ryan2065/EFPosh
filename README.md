@@ -57,28 +57,13 @@ $Context.SaveChanges()
 You can query for existing objects:
 
 ``` PowerShell
-$Context.TestTableTwo.Name.Equals("MyTest").ToList()
-```
-
-The only downside to Queries right now is intellisense. ```$Context.TestTableTwo``` doesn't exist until it's executed, so intellisense won't see ```.Name```.  The same with Name, it does not exist until it's executed, so intellisense won't see ```.Equals```. You can discover these methods by doing this:
-
-``` PowerShell
-$Query = $Context.TestTableTwo.Name
-$Query = $Query.Equals("MyTest").ToList()
-```
-
-```$Query``` will have intellisense for all the comparison operators.
-
-You can find all objects in that table:
-
-``` PowerShell
-$Context.TestTableTwo.ToList()
+Search-EFPosh -Entity $Context.TestTableTwo -Expression { $_.Name -eq 'MyTest' }
 ```
 
 You can easily edit objects in the database:
 
 ``` PowerShell
-$Result = $Context.TestTableTwo.FirstOrDefault()
+$Result = Search-EFPosh -Entity $Context.TestTableTwo -FirstOrDefault
 $Result.Name = 'MyNewName'
 $Context.SaveChanges()
 ```
