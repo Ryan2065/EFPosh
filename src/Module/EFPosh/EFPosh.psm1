@@ -1,4 +1,6 @@
 
+Import-Module "$PSSCriptRoot\Dependencies\BinaryExpressionConverter.dll" -Force
+
 $CommandFiles = Get-ChildItem -Path "$PSScriptRoot\Commands" -Filter '*.ps1'
 foreach($file in $CommandFiles){
     Write-Verbose "Importing $($file.FullName)"

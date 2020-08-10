@@ -12,6 +12,8 @@ using System.Linq.Expressions;
 using System.Dynamic;
 using Microsoft.Extensions.DependencyInjection;
 using System.Security;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Console;
 
 namespace EFPosh
 {
@@ -42,6 +44,14 @@ namespace EFPosh
         }
         static IServiceProvider BuildServiceProvider(IServiceCollection services)
         {
+            var poshLogging = Environment.GetEnvironmentVariable("EFPoshLog");
+            if (!string.IsNullOrEmpty(poshLogging))
+            {
+                if(poshLogging.ToLower() == "true")
+                {
+                    services.AddLogging(p => p.SetMinimumLevel(LogLevel.Information).AddConsole());
+                }
+            }
             var t = typeof(ServiceCollectionContainerBuilderExtensions).GetTypeInfo();
             var BuildServiceProviderMethod = t.GetMethod(nameof(BuildServiceProvider), new Type[] { typeof(IServiceCollection), typeof(bool) });
             return (IServiceProvider)BuildServiceProviderMethod.Invoke(null, new object[] { services, false });
@@ -75,6 +85,7 @@ namespace EFPosh
             }
             var sp = BuildServiceProvider(coll);
             dbOptions.UseInternalServiceProvider(sp);
+            
             DbContext dbContext = null;
             if(typeof(T) == typeof(PoshContext))
             {

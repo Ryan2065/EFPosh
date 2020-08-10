@@ -12,7 +12,7 @@
 RootModule = '.\EFPosh.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.1.9'
+ModuleVersion = '1.2.1'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -51,7 +51,7 @@ Description = 'Extends Entity Framework Core functionality to PowerShell'
 # ProcessorArchitecture = ''
 
 # Modules that must be imported into the global environment prior to importing this module
-# RequiredModules = @()
+#RequiredModules = @('PoshQueryable')
 
 # Assemblies that must be loaded prior to importing this module
 RequiredAssemblies = @('.\Dependencies\EFPosh.dll')
@@ -77,7 +77,8 @@ FunctionsToExport = @(
     'New-EFPoshQuery',
     'Add-EFPoshQuery',
     'Start-EFPoshQuery',
-    'New-EFPoshEntityRelationship'
+    'New-EFPoshEntityRelationship',
+    'Search-EFPosh'
 )
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
@@ -105,6 +106,8 @@ PrivateData = @{
 
         # Tags applied to this module. These help with module discovery in online galleries.
         Tags = @('EntityFramework','ORM')
+        
+        Prerelease = 'alpha'
 
         # A URL to the license for this module.
         LicenseUri = 'https://github.com/Ryan2065/EFPosh/blob/master/LICENSE'

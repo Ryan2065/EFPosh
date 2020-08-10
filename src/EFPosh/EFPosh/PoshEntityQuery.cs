@@ -176,6 +176,14 @@ namespace EFPosh
             UpdateIQueryable();
             return _runner.RunAction(() => _baseIQueryable.Any());
         }
+        public IQueryable<T> GetQueryable()
+        {
+            return _baseIQueryable;
+        }
+        public void ApplyExpression(Expression<Func<T, bool>> exp)
+        {
+            _baseIQueryable = _baseIQueryable.Where(exp);
+        }
     }
     public class PoshEntityColumn<T> : PoshEntityQueryBase<T>
         where T : class
@@ -202,6 +210,11 @@ namespace EFPosh
         public T New()
         {
             return (T)Activator.CreateInstance(typeof(T));
+        }
+
+        public Type GetBaseType()
+        {
+            return typeof(T);
         }
     }
     public class PoshEntityQuery<T> where T : class

@@ -4,9 +4,9 @@ if($PSScriptRoot){
 else{
     $ScriptLocation = "C:\Users\Ryan2\OneDrive\Code\EFPosh\src"
 }
-
+$Env:EFPoshLog = 'true'
 if($null -eq ( Get-Module EFPosh )){
-    . "$PSScriptRoot\buildModule.ps1"
+    #. "$PSScriptRoot\buildModule.ps1"
 }
 
 $ErrorActionPreference = 'Stop'
@@ -48,13 +48,23 @@ $One.Name = 'NewNameTest'
 $Context.Add( $One )
 $Context.SaveChanges()
 
+$One = [TestTableOne]::new()
+$One.Name = 'NewNameTest2'
+$Context.Add( $One )
+$Context.SaveChanges()
+
 $NewObject = [TestTableTwo]::new()
 $NewObject.Name = 'MyTest'
 $NewObject.MyUniqueId = $One.MyUniqueId
 $Context.Add( $NewObject )
 $Context.SaveChanges()
 
+$Name = 'NewNameTest'
+$PropertyName = 'Name'
+$Names = @( $Name, 'Test2' )
+$result = Search-EFPosh -Entity $Context.TestTableOne -Expression { $names -contains $_."$PropertyName" }
 
+$result.count
 
 return
 

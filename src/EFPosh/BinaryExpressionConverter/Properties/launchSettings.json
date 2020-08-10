@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "BinaryExpressionConverter": {
+      "commandName": "Executable",
+      "executablePath": "powershell",
+      "commandLineArgs": "-NoExit -file C:\\Users\\Ryan2\\OneDrive\\Code\\EFPosh\\src\\EFPosh\\BinaryExpressionConverter\\debug.ps1"
+    }
+  }
+}
