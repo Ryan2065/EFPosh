@@ -49,6 +49,7 @@ Function New-EFPoshQuery {
         [string]$FromQuery,
         [object[]]$FromQueryParams
     )
+    Write-Warning "This function will be removed in a future release. Please use Search-EFPosh for querying data."
     $Script:EFPoshQuery = $null
     $Script:EFPoshQuery = $DBContext."$Entity"
     if($FromQuery){
