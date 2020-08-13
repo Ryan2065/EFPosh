@@ -11,6 +11,9 @@ Function Search-EFPosh{
     
     .PARAMETER Expression
     Expression to run against the entity
+
+    .PARAMETER Arguments
+    Arguments for the expression when $0 is used
     
     .PARAMETER AsNoTracking
     Should tracking be set up? If you don't want to edit the results, this could significantly reduce the query time
@@ -49,7 +52,7 @@ Function Search-EFPosh{
     Search-EFPosh -Entity $Context.TableOne -Expression { $_.Name -eq 'Test' }
 
     .EXAMPLE
-    Search-EFPosh -Entity $Context.TableOne -Expression { $_.Name -contains $Example }
+    Search-EFPosh -Entity $Context.TableOne -Expression { $_.Name -contains $0 } -Arguments @($Example)
     
     .NOTES
     .Author: Ryan Ephgrave
@@ -64,6 +67,10 @@ Function Search-EFPosh{
         [Parameter(Mandatory=$false, ParameterSetName = 'FirstOrDefault')]
         [Parameter(Mandatory=$false, ParameterSetName = 'Any')]
         [ScriptBlock]$Expression,
+        [Parameter(Mandatory=$false, ParameterSetName = 'ToList')]
+        [Parameter(Mandatory=$false, ParameterSetName = 'FirstOrDefault')]
+        [Parameter(Mandatory=$false, ParameterSetName = 'Any')]
+        [object[]]$Arguments,
         [Parameter(Mandatory=$false, ParameterSetName = 'ToList')]
         [Parameter(Mandatory=$false, ParameterSetName = 'FirstOrDefault')]
         [Parameter(Mandatory=$false, ParameterSetName = 'Any')]
@@ -104,7 +111,7 @@ Function Search-EFPosh{
         [switch]$Any
     )
     if($Expression){
-        $ConvertedExpression = ConvertTo-BinaryExpression -FuncType $Entity.GetBaseType() -Expression $Expression
+        $ConvertedExpression = ConvertTo-BinaryExpression -FuncType $Entity.GetBaseType() -Expression $Expression -Arguments @($Arguments)
         $Entity.ApplyExpression($ConvertedExpression)
     }
     if($PSCmdlet.ParameterSetName -eq 'ToList'){
