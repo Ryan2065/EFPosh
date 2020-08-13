@@ -17,6 +17,7 @@ namespace BinaryExpressionConverter
     {
         private ParameterExpression _p;
         private SessionState _sState;
+        private object[] arguments;
         public PoshBinaryConverter(SessionState sState)
         {
             _p = Expression.Parameter(typeof(T), "p");
@@ -85,53 +86,76 @@ namespace BinaryExpressionConverter
         }
         private object GetPoshValue(string script)
         {
-            PoshBinaryConverterObject returnObj = new PoshBinaryConverterObject();
-            returnObj.Value = _sState.PSVariable.GetValue(script.TrimStart('"').TrimStart('$').TrimEnd('"'));
-            if(returnObj.Value == null)
+            var index = script.TrimStart('$').Trim();
+            object value;
+            if(int.TryParse(index, out int i))
             {
-                var plainTextBytes = System.Text.Encoding.UTF8.GetBytes(script);
-                var base64 = System.Convert.ToBase64String(plainTextBytes);
-                var values = _sState.InvokeCommand.InvokeScript($@"
+                value = arguments[i];
+                if (value.GetType().IsArray)
+                {
+                    if (value.GetType().GetTypeInfo().GenericTypeArguments.Count() > 0)
+                    {
+                        return value;
+                    }
+                    var arrayObject = value as Array;
+                    foreach (var instance in arrayObject)
+                    {
+                        var baseType = typeof(PoshBinaryConverter<T>);
+                        var methDef = baseType.GetMethods().Where(p => p.Name == "MakeList").FirstOrDefault();
+                        var ty = instance.GetType();
+                        if (ty.Name == "Object") { ty = ty.BaseType; }
+                        return methDef.MakeGenericMethod(ty)
+                            .Invoke(this, new object[] { value });
+                    }
+                }
+                return value;
+            }
+            PoshBinaryConverterObject returnObj = new PoshBinaryConverterObject();
+            var plainTextBytes = System.Text.Encoding.UTF8.GetBytes(script);
+            var base64 = System.Convert.ToBase64String(plainTextBytes);
+            var values = _sState.InvokeCommand.InvokeScript($@"
                     $Expression = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String('{base64}'))
                     $returnObject = [BinaryExpressionConverter.PoshBinaryConverterObject]::new()
                     $returnObject.Value = . ([scriptblock]::Create($Expression))
                     return $returnObject
                 ");
-                if (values.Count != 1)
-                {
-                    throw new Exception($"Could not get value from {script}");
-                }
-                returnObj = (PoshBinaryConverterObject)(values[0].BaseObject);
-            }
-            
-            if (returnObj.Value.GetType().IsArray)
+            if (values.Count != 1)
             {
-                if(returnObj.Value.GetType().GetTypeInfo().GenericTypeArguments.Count() > 0)
+                throw new Exception($"Could not get value from {script}");
+            }
+            returnObj = (PoshBinaryConverterObject)(values[0].BaseObject);
+            if (script.StartsWith("@("))
+            {
+                value = returnObj.Value;
+                if (value.GetType().IsArray)
                 {
-                    return returnObj.Value;
+                    if (value.GetType().GetTypeInfo().GenericTypeArguments.Count() > 0)
+                    {
+                        return value;
+                    }
+                    var arrayObject = value as Array;
+                    foreach (var instance in arrayObject)
+                    {
+                        var baseType = typeof(PoshBinaryConverter<T>);
+                        var methDef = baseType.GetMethods().Where(p => p.Name == "MakeList").FirstOrDefault();
+                        var ty = instance.GetType();
+                        if (ty.Name == "Object") { ty = ty.BaseType; }
+                        return methDef.MakeGenericMethod(ty)
+                            .Invoke(this, new object[] { value });
+                    }
                 }
-                var arrayObject = returnObj.Value as Array;
-                foreach(var instance in arrayObject)
+                else if(value != null)
                 {
                     var baseType = typeof(PoshBinaryConverter<T>);
                     var methDef = baseType.GetMethods().Where(p => p.Name == "MakeList").FirstOrDefault();
-                    var ty = instance.GetType();
+                    var ty = value.GetType();
                     if (ty.Name == "Object") { ty = ty.BaseType; }
                     return methDef.MakeGenericMethod(ty)
-                        .Invoke(this, new object[] { returnObj.Value });
+                        .Invoke(this, new object[] { new[] { value } });
                 }
             }
-            else if (script.StartsWith("@("))
-            {
-                // This should only be hit if there's a 1 item array definied
-                var baseType = typeof(PoshBinaryConverter<T>);
-                var methDef = baseType.GetMethods().Where(p => p.Name == "MakeList").FirstOrDefault();
-                var ty = returnObj.Value.GetType();
-                if (ty.Name == "Object") { ty = ty.BaseType; }
-                return methDef.MakeGenericMethod(ty)
-                    .Invoke(this, new object[] { new object[] { returnObj.Value } });
-            }
-            return returnObj.Value;
+
+            throw new Exception($"Could not expand {script}");
         }
         private Expression GetExpression(ExpressionAst expAst)
         {
@@ -200,8 +224,9 @@ namespace BinaryExpressionConverter
             }
             return returnValue;
         }
-        public object ConvertBinaryExpression(BinaryExpressionAst binaryExpression)
+        public object ConvertBinaryExpression(BinaryExpressionAst binaryExpression, object[] Arguments)
         {
+            arguments = Arguments;
             var bExp = BuildExpression(binaryExpression);
             return Expression.Lambda<Func<T, bool>>(bExp, _p);
         }

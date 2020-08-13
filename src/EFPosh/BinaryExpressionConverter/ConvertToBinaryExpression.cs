@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Management.Automation;
 using System.Management.Automation.Language;
@@ -15,6 +16,10 @@ namespace BinaryExpressionConverter
             Position = 1,
             Mandatory = true)]
         public ScriptBlock Expression { get; set; }
+        [Parameter(
+            Position = 2,
+            Mandatory = false)]
+        public object[] Arguments { get; set; }
 
         private IPoshBinaryConverter _binaryConverter;
         private BinaryExpressionAst _binaryExpressionAst;
@@ -34,7 +39,7 @@ namespace BinaryExpressionConverter
         protected override void ProcessRecord() { }
         protected override void EndProcessing() 
         {
-            WriteObject(_binaryConverter.ConvertBinaryExpression(_binaryExpressionAst));
+            WriteObject(_binaryConverter.ConvertBinaryExpression(_binaryExpressionAst, Arguments));
         }
     }
 }

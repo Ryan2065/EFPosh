@@ -9,6 +9,6 @@ namespace BinaryExpressionConverter
 {
     public interface IPoshBinaryConverter
     {
-        object ConvertBinaryExpression(BinaryExpressionAst binaryExpression);
+        object ConvertBinaryExpression(BinaryExpressionAst binaryExpression, object[] Arguments);
     }
 }

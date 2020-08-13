@@ -60,6 +60,15 @@ You can query for existing objects:
 Search-EFPosh -Entity $Context.TestTableTwo -Expression { $_.Name -eq 'MyTest' }
 ```
 
+Querying with variables is easy also, but not straight-forward:
+
+``` PowerShell
+$SearchFor = 'MyTest'
+Search-EFPosh -Entity $Context.TestTableTwo -Expression { $_.Name -eq $0 } -Arguments @($SearchFor)
+```
+
+In the above example, use number variables representing the index in the Arguments array. So $0 corresponds to index 0 in Arguments.
+
 You can easily edit objects in the database:
 
 ``` PowerShell
