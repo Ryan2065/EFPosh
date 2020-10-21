@@ -4,11 +4,19 @@ Param(
     [bool]$IntegratedSecurity = '##IntegratedSecurity##',
     [PScredential]$Credential,
     [ValidateSet('Interactive', 'Network', 'Batch', 'Service', 'Unlock', 'NetworkCleartext', 'NewCredentials')]
-    [string]$LogonType = 'NewCredentials'
+    [string]$LogonType = 'NewCredentials',
+    [switch]$EFPoshLog
 )
 
 if($null -eq ( Get-Module EFPosh )){
     Import-Module EFPosh -ErrorAction Stop
+}
+
+if($EFLog){
+    $Env:EFPoshLog = 'true'
+}
+else{
+    $Env:EFPoshLog = $null
 }
 
 #region Class Definitions

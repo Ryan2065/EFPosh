@@ -111,8 +111,14 @@ Function Search-EFPosh{
         [switch]$Any
     )
     if($Expression){
-        $ConvertedExpression = ConvertTo-BinaryExpression -FuncType $Entity.GetBaseType() -Expression $Expression -Arguments @($Arguments)
-        $Entity.ApplyExpression($ConvertedExpression)
+        try{
+            $ConvertedExpression = ConvertTo-BinaryExpression -FuncType $Entity.GetBaseType() -Expression $Expression -Arguments @($Arguments)
+            $Entity.ApplyExpression($ConvertedExpression)
+        }
+        catch{
+            throw
+            return
+        }
     }
     if($PSCmdlet.ParameterSetName -eq 'ToList'){
         $ToList = $true
