@@ -17,6 +17,9 @@ Function Add-EFPoshModelEntity {
     
     .PARAMETER PropertyList
     List of properties you want modeled - defaults to all
+
+    .PARAMETER FromSql
+    An optional SQL query to use as a base for querying the entity
     
     .NOTES
     .Author: Ryan Ephgrave
@@ -88,7 +91,9 @@ Function Add-EFPoshModelEntity {
         })]
         [string]$Name,
         [Parameter(Mandatory = $false)]
-        [string[]]$PropertyList
+        [string[]]$PropertyList,
+        [Parameter(Mandatory=$false)]
+        [string[]]$FromSql
     )
     if($null -eq $Script:ContextFileSettings) {
         throw 'Must first run Start-EFPoshModel to set the DB and file information'
@@ -141,7 +146,11 @@ Function Add-EFPoshModelEntity {
         $strPks = $strPKs.TrimEnd(",'") + "')"
     }
     $TableArrayBuilder = @()
-    $TableArrayBuilder += "`$Tables += New-EFPoshEntityDefinition -Type '$Name' -TableName '$Name' -Schema '$DBSchema' $strPks"
+    $TableString = "`$Tables += New-EFPoshEntityDefinition -Type '$Name' -TableName '$Name' -Schema '$DBSchema' $strPks"
+    if($FromSql){
+        $TableString += " -FromSql '$($FromSql)'"
+    }
+    $TableArrayBuilder += $TableString
     $TableArrayBuilder += "##TableArray##"
     $TableArrayString = $TableArrayBuilder -join [System.Environment]::NewLine
     $Content = Get-Content $Script:ContextFileSettings.FilePath -Raw
