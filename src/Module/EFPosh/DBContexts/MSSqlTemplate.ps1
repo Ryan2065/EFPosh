@@ -12,7 +12,7 @@ if($null -eq ( Get-Module EFPosh )){
     Import-Module EFPosh -ErrorAction Stop
 }
 
-if($EFLog){
+if($EFPoshLog){
     $Env:EFPoshLog = 'true'
 }
 else{
