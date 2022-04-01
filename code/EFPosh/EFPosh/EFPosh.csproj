@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+	<TargetFramework>net6.0</TargetFramework>
+  </PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="PowerShellStandard.Library" Version="5.1.0" />
+	</ItemGroup>
+	
+	<ItemGroup Condition="'$(TargetFramework)' == 'net6.0'">
+		<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="6.0.2" />
+	</ItemGroup>
+	
+	<ItemGroup>
+	  <ProjectReference Include="..\EFPosh.BinaryExpressionConverter\EFPosh.BinaryExpressionConverter.csproj" />
+	  <ProjectReference Include="..\EFPosh.Scaffold\EFPosh.Scaffold.csproj" />
+	</ItemGroup>
+
+</Project>
