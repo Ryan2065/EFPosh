@@ -12,7 +12,6 @@ using System.Dynamic;
 using Microsoft.Extensions.DependencyInjection;
 using System.Security;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Console;
 
 namespace EFPosh
 {
@@ -42,16 +41,14 @@ namespace EFPosh
             }
             return null;
         }
+
         static IServiceProvider BuildServiceProvider(IServiceCollection services)
         {
-            var poshLogging = Environment.GetEnvironmentVariable("EFPoshLog");
-            if (!string.IsNullOrEmpty(poshLogging))
+            services.AddLogging(p => p.SetMinimumLevel(LogLevel.Warning).AddFilter("Microsoft.EntityFrameworkCore.Database.Command", LogLevel.Information).AddPoshLogger(config =>
             {
-                if(poshLogging.ToLower() == "true")
-                {
-                    services.AddLogging(p => p.SetMinimumLevel(LogLevel.Information).AddConsole());
-                }
-            }
+                config.LogLevelStreamMappings.Add(LogLevel.Information, PoshLogStream.Debug);
+                config.LogLevelStreamMappings.Add(LogLevel.None, PoshLogStream.Debug);
+            }));
             var t = typeof(ServiceCollectionContainerBuilderExtensions).GetTypeInfo();
             var BuildServiceProviderMethod = t.GetMethod(nameof(BuildServiceProvider), new Type[] { typeof(IServiceCollection), typeof(bool) });
             return (IServiceProvider)BuildServiceProviderMethod.Invoke(null, new object[] { services, false });
@@ -68,6 +65,7 @@ namespace EFPosh
         {
             var dbOptions = new DbContextOptionsBuilder<T>();
             IServiceCollection coll = new ServiceCollection();
+            
             switch (dbType.ToUpper())
             {
                 case "SQLITE":

@@ -112,7 +112,6 @@ Function Search-EFPosh{
     )
     if($Expression){
         try{
-           
             $ConvertedExpression = ConvertTo-BinaryExpression -FuncType $Entity.GetBaseType() -Expression $Expression -Arguments @($Arguments)
             $Entity.ApplyExpression($ConvertedExpression)
         }
@@ -126,31 +125,31 @@ Function Search-EFPosh{
     }
     if($Include){
         foreach($instance in $Include){
-            if(-not ( [string]::IsNullOrEmpty($instance ))){
-                $Entity = $Entity.Include($instance)
+            if(-not ( [string]::IsNullOrEmpty($instance))){
+                $Entity.Include($instance)
             }
         }
     }
     if($AsNoTracking){
-        $Entity = $Entity.AsNoTracking()
+        $Entity.AsNoTracking()
     }
     if($Take){
-        $Entity = $Entity.Take($Take)
+        $Entity.Take($Take)
     }
     if($Skip){
-        $Entity = $Entity.Skip($Skip)
+        $Entity.Skip($Skip)
     }
     if($OrderBy){
-        $Entity = $Entity.OrderBy($OrderBy)
+        $Entity.OrderBy($OrderBy)
     }
     if($OrderByDescending){
-        $Entity = $Entity.OrderBy($OrderByDescending)
+        $Entity.OrderBy($OrderByDescending)
     }
     if($Distinct){
-        $Entity = $Entity.Distinct()
+        $Entity.Distinct()
     }
     if($Select){
-        $Entity = $Entity.Select($Select)
+        $Entity.Select($Select)
     }
     if($ToList){
         return $Entity.ToList()

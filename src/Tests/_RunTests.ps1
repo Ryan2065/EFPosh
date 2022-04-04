@@ -1,5 +1,5 @@
 Import-Module Pester
-$VerbosePreference = 'SilentlyContinue'
+$VerbosePreference = 'Continue'
 $ErrorActionPreference = 'Continue'
 
 Write-Verbose 'Building module with newest version'

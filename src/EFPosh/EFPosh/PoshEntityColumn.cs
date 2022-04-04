@@ -53,7 +53,6 @@ namespace EFPosh
             List<MemberAssignment> assignments = new List<MemberAssignment>();
             foreach (var prop in SelectProperties)
             {
-                Console.WriteLine($"Looking at prop {prop}");
                 var mi = typeof(T).GetProperties()
                     .Where(p => p.Name.ToLower().Equals(prop.ToLower()))
                     .First();
@@ -105,6 +104,19 @@ namespace EFPosh
             _modifiedIQueryable = _modifiedIQueryable.FromSql(query);
         }
 
+        public void Include(string propertyName)
+        {
+            var methodInfo = this.GetType().GetMethod("IncludeInternal", BindingFlags.NonPublic | BindingFlags.Instance);
+            var propertyInfo = typeof(T).GetProperties().Where(p => p.Name.Equals(propertyName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+            var gMethod = methodInfo.MakeGenericMethod(propertyInfo.PropertyType);
+            gMethod.Invoke(this, new[] { propertyInfo.Name });
+        }
+
+        internal void IncludeInternal<TKey>(string propertyName)
+        {
+            _modifiedIQueryable = _modifiedIQueryable.Include(GetSinglePropertyExpression<TKey>(propertyName));
+        }
+
         public void Take(int take)
         {
              _modifiedIQueryable = _modifiedIQueryable.Take(take);
@@ -128,7 +140,7 @@ namespace EFPosh
             }
         }
 
-        internal Expression<Func<T, TKey>> GetOrderByExpression<TKey>(string propertyName)
+        internal Expression<Func<T, TKey>> GetSinglePropertyExpression<TKey>(string propertyName)
         {
             
             var body = Expression.Property(_p, propertyName);
@@ -139,12 +151,12 @@ namespace EFPosh
 
         internal void OrderByInternal<TKey>(string propertyName)
         {
-            _modifiedIQueryable = _modifiedIQueryable.OrderBy(GetOrderByExpression<TKey>(propertyName));
+            _modifiedIQueryable = _modifiedIQueryable.OrderBy(GetSinglePropertyExpression<TKey>(propertyName));
         }
 
         internal void OrderByDescendingInternal<TKey>(string propertyName)
         {
-            _modifiedIQueryable = _modifiedIQueryable.OrderByDescending(GetOrderByExpression<TKey>(propertyName));
+            _modifiedIQueryable = _modifiedIQueryable.OrderByDescending(GetSinglePropertyExpression<TKey>(propertyName));
         }
 
         public void OrderBy(string propertyName)
@@ -176,6 +188,12 @@ namespace EFPosh
         public void ApplyExpression(Expression<Func<T, bool>> exp)
         {
             _modifiedIQueryable = _modifiedIQueryable.Where(exp);
+        }
+
+        public void Reset()
+        {
+            _modifiedIQueryable = _baseIQueryable.AsQueryable();
+            SelectProperties.Clear();
         }
 
     }
