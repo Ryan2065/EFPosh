@@ -2,12 +2,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Dynamic;
 using Microsoft.EntityFrameworkCore.Internal;
-using Microsoft.EntityFrameworkCore.Query.ResultOperators.Internal;
 using System.Linq.Expressions;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using System.Reflection;
 
 namespace EFPosh
@@ -19,6 +15,7 @@ namespace EFPosh
         private IQueryable<T> _modifiedIQueryable;
         private ParameterExpression _p;
         private List<string> SelectProperties;
+        private readonly DbContext _dbContext;
         public PoshEntityColumn(DbContext dbContext)
         {
             var ets = dbContext.Model.GetEntityTypes();
@@ -26,6 +23,7 @@ namespace EFPosh
             {
                 if (et.ClrType == typeof(T))
                 {
+#if NETFRAMEWORK
                     if (et.IsQueryType)
                     {
                         _baseIQueryable = dbContext.Query<T>().AsQueryable();
@@ -34,11 +32,15 @@ namespace EFPosh
                     {
                         _baseIQueryable = dbContext.Set<T>().AsQueryable();
                     }
+#else
+                    _baseIQueryable = dbContext.Set<T>().AsQueryable();
+#endif
                 }
             }
             _modifiedIQueryable = _baseIQueryable;
             _p = Expression.Parameter(typeof(T), "p");
             SelectProperties = new List<string>();
+            _dbContext = dbContext;
         }
 
         public T New()
@@ -101,7 +103,12 @@ namespace EFPosh
 
         public void FromSql(string query)
         {
+#if NETFRAMEWORK
             _modifiedIQueryable = _modifiedIQueryable.FromSql(query);
+#else
+            // have to overwrite the query
+            _modifiedIQueryable =  _dbContext.Set<T>().FromSqlRaw(query);
+#endif
         }
 
         public void Include(string propertyName)

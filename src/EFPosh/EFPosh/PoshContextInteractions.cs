@@ -2,15 +2,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore.Internal;
 using System.Reflection;
 using System.IO;
-using System.Linq.Expressions;
 using System.Dynamic;
 using Microsoft.Extensions.DependencyInjection;
-using System.Security;
 using Microsoft.Extensions.Logging;
 
 namespace EFPosh

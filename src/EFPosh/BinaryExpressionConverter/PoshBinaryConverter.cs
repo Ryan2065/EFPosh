@@ -1,15 +1,11 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Management.Automation;
 using System.Management.Automation.Language;
 using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Text;
 
 namespace BinaryExpressionConverter
 {

@@ -1,8 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Internal;
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using System;
-using System.Linq;
 
 namespace EFPosh
 {
@@ -25,7 +21,11 @@ namespace EFPosh
             {
                 if (t.Keyless)
                 {
+#if NETFRAMEWORK
                     modelBuilder.Query(t.Type);
+#else
+                    modelBuilder.Entity(t.Type).HasNoKey();
+#endif
                 }
                 else
                 {
@@ -35,41 +35,19 @@ namespace EFPosh
                 {
                     modelBuilder.Entity(t.Type).HasKey(t.PrimaryKeys);
                 }
-                if (!string.IsNullOrEmpty(t.TableName))
+                string tableName = string.IsNullOrEmpty(t.TableName) ? t.TableName : t.Type.Name;
+                string schema = string.IsNullOrEmpty(t.Schema) ? t.Schema : null;
+                if (t.Keyless)
                 {
-                    if (!string.IsNullOrEmpty(t.Schema))
-                    {
-                        if (t.Keyless)
-                        {
-                            modelBuilder.Query(t.Type).ToView(t.TableName, t.Schema);
-                        }
-                        else
-                        {
-                            modelBuilder.Entity(t.Type).ToTable(t.TableName, t.Schema);
-                        }
-                    }
-                    else
-                    {
-                        if (t.Keyless)
-                        {
-                            modelBuilder.Query(t.Type).ToView(t.TableName);
-                        }
-                        else
-                        {
-                            modelBuilder.Entity(t.Type).ToTable(t.TableName);
-                        }
-                    }
+#if NETFRAMEWORK
+                    modelBuilder.Query(t.Type).ToView(t.TableName, schema);
+#else
+                    modelBuilder.Entity(t.Type).ToView(t.TableName, schema);
+#endif
                 }
-                else if (!string.IsNullOrEmpty(t.Schema))
+                else
                 {
-                    if (t.Keyless)
-                    {
-                        modelBuilder.Query(t.Type).ToView(t.Type.Name, t.Schema);
-                    }
-                    else
-                    {
-                        modelBuilder.Entity(t.Type).ToTable(t.Type.Name, t.Schema);
-                    }
+                    modelBuilder.Entity(t.Type).ToTable(t.TableName, schema);
                 }
             }
         }

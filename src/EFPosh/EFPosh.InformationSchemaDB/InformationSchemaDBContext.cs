@@ -1,6 +1,5 @@
 ﻿using EFPosh.InformationSchemaDB.Models;
 using Microsoft.EntityFrameworkCore;
-using System;
 
 namespace EFPosh.InformationSchemaDB
 {

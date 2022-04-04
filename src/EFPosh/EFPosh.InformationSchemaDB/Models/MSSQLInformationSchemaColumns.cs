@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace EFPosh.InformationSchemaDB.Models
+﻿namespace EFPosh.InformationSchemaDB.Models
 {
     public class MSSQLInformationSchemaColumns
     {
