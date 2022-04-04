@@ -6,10 +6,10 @@ else{
 }
 $Env:EFPoshLog = 'true'
 if($null -eq ( Get-Module EFPosh )){
-    #. "$PSScriptRoot\buildModule.ps1"
+    . "$PSScriptRoot\buildModule.ps1"
 }
 
-$ErrorActionPreference = 'Stop'
+$ErrorActionPreference = 'Continue'
 Import-Module "$ScriptLocation\Module\EFPosh" -Force
 
 $DBFile = "$ScriptLocation\bin\MyDatabase.sqlite"
@@ -62,7 +62,7 @@ $Context.SaveChanges()
 $Name = 'NewNameTest'
 $PropertyName = 'Name'
 $Names = @( $Name, 'Test2' )
-$result = Search-EFPosh -Entity $Context.TestTableOne -Expression { $names -contains $_."$PropertyName" }
+$result = Search-EFPosh -Entity $Context.TestTableOne -Expression { $0 -contains $_."$1" } -Arguments @($Names, $PropertyName)
 
 $result.count
 

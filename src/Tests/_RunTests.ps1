@@ -21,9 +21,8 @@ Write-Output 'Starting tests...'
 Invoke-Pester -Path "$PSScriptRoot\1_CreateDbs.tests.ps1"
 Invoke-Pester -Path "$PSScriptRoot\2_AddData.tests.ps1"
 Invoke-Pester -Path "$PSScriptRoot\3_QueryData.tests.ps1"
-Invoke-Pester -Path "$PSScriptRoot\4_NewQueryData.tests.ps1"
 
 Write-Output 'Cleaning up'
-. "$PSScriptRoot\RemoveDbs.ps1"
+#. "$PSScriptRoot\RemoveDbs.ps1"
 
 $VerbosePreference = 'SilentlyContinue'

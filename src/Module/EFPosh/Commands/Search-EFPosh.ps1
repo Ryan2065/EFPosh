@@ -112,6 +112,7 @@ Function Search-EFPosh{
     )
     if($Expression){
         try{
+           
             $ConvertedExpression = ConvertTo-BinaryExpression -FuncType $Entity.GetBaseType() -Expression $Expression -Arguments @($Arguments)
             $Entity.ApplyExpression($ConvertedExpression)
         }
@@ -143,7 +144,7 @@ Function Search-EFPosh{
         $Entity = $Entity.OrderBy($OrderBy)
     }
     if($OrderByDescending){
-        $Entity = $Entity.OrderBy("$OrderByDescending descending")
+        $Entity = $Entity.OrderBy($OrderByDescending)
     }
     if($Distinct){
         $Entity = $Entity.Distinct()

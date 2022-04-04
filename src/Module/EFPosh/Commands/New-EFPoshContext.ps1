@@ -80,16 +80,7 @@ Function New-EFPoshContext{
         [Parameter(Mandatory = $false, ParameterSetName = "ConnectionString")]
         [Parameter(Mandatory = $false, ParameterSetName = "SQLite")]
         [Parameter(Mandatory = $false, ParameterSetName = "MSSQL")]
-        [string]$ClassName,
-        [Parameter(Mandatory = $false, ParameterSetName = "ConnectionString")]
-        [Parameter(Mandatory = $false, ParameterSetName = "SQLite")]
-        [Parameter(Mandatory = $false, ParameterSetName = "MSSQL")]
-        [pscredential]$Credential,
-        [Parameter(Mandatory = $false, ParameterSetName = "ConnectionString")]
-        [Parameter(Mandatory = $false, ParameterSetName = "SQLite")]
-        [Parameter(Mandatory = $false, ParameterSetName = "MSSQL")]
-        [ValidateSet('Interactive', 'Network', 'Batch', 'Service', 'Unlock', 'NetworkCleartext', 'NewCredentials')]
-        [string]$LogonType = 'NewCredentials'
+        [string]$ClassName
     )
     if($Entities -and $AssemblyFile){
         throw 'Entities parameter can not be used with AssemblyFile - please use one or the other'
@@ -101,13 +92,6 @@ Function New-EFPoshContext{
     }
     $Script:LatestDBContext = $null
     $Script:LatestDBContext = [EFPosh.PoshContextInteractions]::new()
-    if($Credential){
-        $Script:LatestDBContext.Credential = [EFPosh.PoshCredential]::new()
-        $Script:LatestDBContext.Credential.UserName = $Credential.GetNetworkCredential().UserName
-        $Script:LatestDBContext.Credential.Domain = $Credential.GetNetworkCredential().Domain
-        $Script:LatestDBContext.Credential.Pass = $Credential.Password
-        $Script:LatestDBContext.Credential.LogonType = $LogonType
-    }
     $boolEnsureCreated = $false
     if($EnsureCreated){ $boolEnsureCreated = $true }
     $boolReadOnly = $false

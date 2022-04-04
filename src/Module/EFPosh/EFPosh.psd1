@@ -74,9 +74,6 @@ FunctionsToExport = @(
     'New-EFPoshEntityDefinition', 
     'Start-EFPoshModel', 
     'Add-EFPoshModelEntity',
-    'New-EFPoshQuery',
-    'Add-EFPoshQuery',
-    'Start-EFPoshQuery',
     'New-EFPoshEntityRelationship',
     'Search-EFPosh'
 )

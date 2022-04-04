@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Linq.Dynamic;
 using Microsoft.EntityFrameworkCore.Internal;
 using System.Reflection;
 using System.IO;
@@ -37,7 +36,8 @@ namespace EFPosh
                 var fullDLLPath = Path.Combine(directoryInfo, dllNeeded);
                 if (File.Exists(fullDLLPath))
                 {
-                    return Assembly.LoadFrom(fullDLLPath);
+                    var bytes = System.IO.File.ReadAllBytes(fullDLLPath);
+                    return Assembly.Load(bytes);
                 }
             }
             return null;
@@ -56,8 +56,6 @@ namespace EFPosh
             var BuildServiceProviderMethod = t.GetMethod(nameof(BuildServiceProvider), new Type[] { typeof(IServiceCollection), typeof(bool) });
             return (IServiceProvider)BuildServiceProviderMethod.Invoke(null, new object[] { services, false });
         }
-        public PoshCredential Credential { get; set; }
-        private ActionRunner _runner;
         private DbContext _poshContext;
         public void NewDbContext<T>(
             string connectionString,
@@ -68,7 +66,6 @@ namespace EFPosh
         )
             where T : DbContext
         {
-            _runner = new ActionRunner(Credential);
             var dbOptions = new DbContextOptionsBuilder<T>();
             IServiceCollection coll = new ServiceCollection();
             switch (dbType.ToUpper())
@@ -97,7 +94,7 @@ namespace EFPosh
             }
             if (EnsureCreated)
             {
-                _runner.RunAction(() => dbContext.Database.EnsureCreated());
+                dbContext.Database.EnsureCreated();
             }
             if (ReadOnly)
             {
@@ -151,7 +148,7 @@ namespace EFPosh
         public PoshEntityColumn<T> NewQuery<T>()
             where T : class
         {
-            var returnObject = new PoshEntityColumn<T>(_poshContext, _runner, "", new List<object>(), "", new List<object>());
+            var returnObject = new PoshEntityColumn<T>(_poshContext);
             if (FromSqlEntities.ContainsKey(typeof(T).Name))
             {
                 returnObject.FromSql(FromSqlEntities[typeof(T).Name]);
@@ -214,7 +211,7 @@ namespace EFPosh
 
         public void SaveChanges()
         {
-            _runner.RunAction(() => _poshContext.SaveChanges());
+            _poshContext.SaveChanges();
         }
 
         public void Remove(object obj)
@@ -246,22 +243,37 @@ namespace EFPosh
             }
         }
 
+        private Dictionary<string, object> CachedEntities { get; set; } = new Dictionary<string, object>();
+
         public override bool TryGetMember(GetMemberBinder binder,
                                   out object result)
         {
-            var typeList = _poshContext.Model
+            if (!CachedEntities.ContainsKey(binder.Name.ToUpper()))
+            {
+                
+                var typeList = _poshContext.Model
                                 .GetEntityTypes()
                                 .Select(p => p.ClrType)
                                 .ToList();
-            var requestedType = typeList.Where(p => p.Name.ToUpper().Equals(binder.Name.ToUpper())).FirstOrDefault();
-            result = null;
-            if(requestedType != null)
-            {
-                result = typeof(PoshContextInteractions)
-                    .GetMethod("NewQuery")
-                    .MakeGenericMethod(requestedType)
-                    .Invoke(this, null);
+                var requestedType = typeList.Where(p => p.Name.ToUpper().Equals(binder.Name.ToUpper())).FirstOrDefault();
+                result = null;
+                if (requestedType != null)
+                {
+                    CachedEntities[binder.Name.ToUpper()] = typeof(PoshContextInteractions)
+                        .GetMethod("NewQuery")
+                        .MakeGenericMethod(requestedType)
+                        .Invoke(this, null);
 
+                }
+            }
+            try
+            {
+                result = CachedEntities[binder.Name.ToUpper()];
+            }
+            catch
+            {
+                result = null;
+                // property not found - just return false below, result will be null
             }
             return result == null ? false : true;
         }

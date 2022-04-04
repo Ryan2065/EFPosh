@@ -44,12 +44,7 @@ Function Start-EFPoshModel {
         [Parameter(Mandatory = $false, ParameterSetName = "MSSQL")]
         [string[]]$EntitesToMap,
         [Parameter(Mandatory = $false, ParameterSetName = "MSSQL")]
-        [switch]$AllEntities,
-        [Parameter(Mandatory = $false, ParameterSetName = "MSSQL")]
-        [pscredential]$Credential,
-        [Parameter(Mandatory = $false, ParameterSetName = "MSSQL")]
-        [ValidateSet('Interactive', 'Network', 'Batch', 'Service', 'Unlock', 'NetworkCleartext', 'NewCredentials')]
-        [string]$LogonType = 'NewCredentials'
+        [switch]$AllEntities
     )
     Write-Verbose 'Creating new Model object'
     $ParentDirectory = ( Get-Item $PSScriptRoot ).Parent.FullName
@@ -67,13 +62,7 @@ Function Start-EFPoshModel {
         $Content | Out-File $FilePath -Force -Encoding utf8
     }
 
-    $optionalParams = @{}
-    if($Credential){
-        $optionalParams['Credential'] = $Credential
-        $optionalParams['LogonType'] = $LogonType
-    }
-
-    $Context = & "$ParentDirectory\DBContexts\MSSqlInformationSchemasDbContext.ps1" -Server $MSSQLServer -Database $MSSQLDatabase -IntegratedSecurity $MSSQLIntegratedSecurity @optionalParams
+    $Context = & "$ParentDirectory\DBContexts\MSSqlInformationSchemasDbContext.ps1" -Server $MSSQLServer -Database $MSSQLDatabase -IntegratedSecurity $MSSQLIntegratedSecurity
     $TableList = @{}
     $ViewList = @{}
     $SchemaList = New-Object System.Collections.Generic.List[string]

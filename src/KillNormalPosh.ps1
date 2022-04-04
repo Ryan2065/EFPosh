@@ -12,12 +12,8 @@ $null = Add-Type -Path "C:\users\ryan2\OneDrive\Code\EFPosh\src\EFPosh\EFPosh\bi
 
 $Script:LatestDBContext = [EFPosh.PoshContextInteractions]::new()
 
-$ConnectionString = "Server=$($MSSQLServer);Database=$($MSSQLDatabase);Integrated Security=$($MSSQLIntegratedSecurity)"
-$DBType = 'MSSQL'
-$Assembly = 'C:\users\ryan2\onedrive\code\EFPosh\src\EFPosh\EFPosh.InformationSchemaDB\bin\Debug\net472\EFPosh.InformationSchemaDB.dll'
-$ClassName = 'InformationSchemaDBContext'
-$Context = $Script:LatestDBContext.ExistingContext($ConnectionString, $DBType, $false, $false, $Assembly, $ClassName)
-return
+Remove-Item 'c:\users\ryan2\sql.sqlite' -Force -ErrorAction SilentlyContinue
+
 $ConnectionString = "Filename=c:\users\ryan2\sql.sqlite"
 Class MyTest {
     [int]$Id
@@ -30,4 +26,28 @@ $DBType = 'SQLITE'
 $Entities = @(
     $newEntity
 )
-$null = $Script:LatestDBContext.NewPoshContext($ConnectionString, $DBType, $Entities, $false, $null)
+$null = $Script:LatestDBContext.NewPoshContext($ConnectionString, $DBType, $Entities, $true, $false)
+$test = [MyTest]::New();
+$test.test = "my test"
+$Script:LatestDBContext.Add($test)
+$test = [MyTest]::New();
+$test.test = "aamy test"
+$Script:LatestDBContext.Add($test)
+$test = [MyTest]::New();
+$test.test = "zzmy test"
+$Script:LatestDBContext.Add($test)
+$Script:LatestDBContext.SaveChanges()
+#$Script:LatestDBContext.MyTest.Select("test")
+#$Script:LatestDBContext.MyTest.ToList();
+
+write-host 'order by test'
+
+#$Script:LatestDBContext.MyTest.OrderByDescending("test")
+#$Script:LatestDBContext.MyTest.ToList();
+
+Function MyTest([object]$DbContextEntity, [string[]]$SelectList){
+  $DbContextEntity.Select($SelectList);
+  $DbContextEntity.ToList();
+}
+
+MyTest -DbContextEntity $Script:LatestDBContext.MyTest -SelectList 'test'

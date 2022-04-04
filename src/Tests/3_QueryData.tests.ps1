@@ -5,27 +5,22 @@ Describe 'Can query with functions' {
             [string]$Name,
             [EFPosh.PoshContextInteractions]$DbContext
         )
-        New-EFPoshQuery -DBContext $DbContext -Entity 'TableOne'
-        (Start-EFposhQuery -FirstOrDefault).Count | Should -Be 1
-        New-EFPoshQuery -DBContext $DbContext -Entity 'TableTwo'
-        (Start-EFposhQuery -FirstOrDefault) | Should -BeNullOrEmpty
+        (Search-EFPosh -Entity $DbContext.TableOne -FirstOrDefault).count | Should -be 1
+        Search-EFPosh -Entity $DbContext.TableTwo -FirstOrDefault | Should -BeNullOrEmpty
     }
     It 'Correctly does ToList in <Name>' -TestCases $Global:DbContexts {
         Param(
             [string]$Name,
             [EFPosh.PoshContextInteractions]$DbContext
         )
-        New-EFPoshQuery -DBContext $DbContext -Entity 'TableOne'
-        (Start-EFposhQuery -ToList).Count | Should -BeGreaterThan 1
+        (Search-EFPosh -Entity $DbContext.TableOne).Count | Should -BeGreaterThan 1
     }
     It 'Queries with Equals in <Name>' -TestCases $Global:DbContexts {
         Param(
             [string]$Name,
             [EFPosh.PoshContextInteractions]$DbContext
         )
-        New-EFPoshQuery -DBContext $DbContext -Entity 'TableOne'
-        Add-EFPoshQuery -Property Id -Equals 1
-        $Result = Start-EFposhQuery -ToList
+        $Result = Search-EFPosh -Entity $DbContext.TableOne -Expression { $_.Id -eq 1 }
         $Result.Count | Should -be 1
         $Result.Id | Should -be 1
     }
@@ -34,12 +29,8 @@ Describe 'Can query with functions' {
             [string]$Name,
             [EFPosh.PoshContextInteractions]$DbContext
         )
-        New-EFPoshQuery -DBContext $DbContext -Entity 'TableOne'
-        $All = Start-EFposhQuery -ToList
-
-        New-EFPoshQuery -DBContext $DbContext -Entity 'TableOne'
-        Add-EFPoshQuery -Property Id -NotEquals 1
-        $Results = Start-EFposhQuery -ToList
+        $All = Search-EFPosh -Entity $DbContext.TableOne
+        $Results = Search-EFPosh -Entity $DbContext.TableOne -Expression { $_.Id -ne 1 }
         $Results.Count | Should -be ( $All.Count - 1 )
         foreach($result in $Results) {
             $Result.Id | Should -Not -Be 1
@@ -50,9 +41,7 @@ Describe 'Can query with functions' {
             [string]$Name,
             [EFPosh.PoshContextInteractions]$DbContext
         )
-        New-EFPoshQuery -DBContext $DbContext -Entity 'TableOne'
-        Add-EFPoshQuery -Property Name -Contains 'TestName1'
-        $Results = Start-EFposhQuery -ToList
+        $Results = Search-EFPosh -Entity $DbContext.TableOne -Expression { $_.Name -contains 'TestName1' }
         $Results.Count | Should -Be 12
         foreach($result in $Results) {
             $Result.Name.ToLower().Contains('testname1') | Should -BeTrue
@@ -63,9 +52,7 @@ Describe 'Can query with functions' {
             [string]$Name,
             [EFPosh.PoshContextInteractions]$DbContext
         )
-        New-EFPoshQuery -DBContext $DbContext -Entity 'TableOne'
-        Add-EFPoshQuery -Property Name -Contains @('TestName1')
-        $Results = Start-EFposhQuery -ToList
+        $Results = Search-EFPosh -Entity $DbContext.TableOne -Expression { @('TestName1') -contains $_.Name }
         $Results.Count | Should -Be 1
         foreach($result in $Results) {
             $Result.Name | Should -Be 'TestName1'
@@ -76,9 +63,7 @@ Describe 'Can query with functions' {
             [string]$Name,
             [EFPosh.PoshContextInteractions]$DbContext
         )
-        New-EFPoshQuery -DBContext $DbContext -Entity 'TableOne'
-        Add-EFPoshQuery -Property Name -NotContains 'TestName1'
-        $Results = Start-EFposhQuery -ToList
+        $Results = Search-EFPosh -Entity $DbContext.TableOne -Expression { $_.Name -notcontains 'TestName1' } 
         $Results.Count | Should -Be 89
         foreach($result in $Results) {
             $Result.Name.ToLower().Contains('testname1') | Should -BeFalse
@@ -89,11 +74,8 @@ Describe 'Can query with functions' {
             [string]$Name,
             [EFPosh.PoshContextInteractions]$DbContext
         )
-        New-EFPoshQuery -DBContext $DbContext -Entity 'TableOne'
-        $AllResults = Start-EFposhQuery -ToList
-        New-EFPoshQuery -DBContext $DbContext -Entity 'TableOne'
-        Add-EFPoshQuery -Property Name -NotContains @('TestName1')
-        $Results = Start-EFposhQuery -ToList
+        $AllResults = Search-EFPosh -Entity $DbContext.TableOne
+        $Results = Search-EFPosh -Entity $DbContext.TableOne -Expression { @('TestName1') -notcontains $_.Name }
         $Results.Count | Should -Be ( $AllResults.Count - 1 )
         foreach($result in $Results) {
             $Result.Name | Should -Not -Be 'TestName1'
@@ -104,9 +86,7 @@ Describe 'Can query with functions' {
             [string]$Name,
             [EFPosh.PoshContextInteractions]$DbContext
         )
-        New-EFPoshQuery -DBContext $DbContext -Entity 'TableOne'
-        Add-EFPoshQuery -Property Name -StartsWith 'TestName1'
-        $Results = Start-EFposhQuery -ToList
+        $Results = Search-EFPosh -Entity $DbContext.TableOne -Expression { $_.Name -like "TestName1%" }
         $Results.Count | Should -Be 12
         foreach($result in $Results) {
             $Result.Name.ToLower().Contains('testname1') | Should -BeTrue
@@ -117,9 +97,7 @@ Describe 'Can query with functions' {
             [string]$Name,
             [EFPosh.PoshContextInteractions]$DbContext
         )
-        New-EFPoshQuery -DBContext $DbContext -Entity 'TableOne'
-        Add-EFPoshQuery -Property Name -EndsWith '0'
-        $Results = Start-EFposhQuery -ToList
+        $Results = Search-EFPosh -Entity $DbContext.TableOne -Expression { $_.Name -like "%0" }
         $Results.Count | Should -Be 10
         foreach($result in $Results) {
             $Result.Name.ToLower().EndsWith('0') | Should -BeTrue
@@ -130,9 +108,7 @@ Describe 'Can query with functions' {
             [string]$Name,
             [EFPosh.PoshContextInteractions]$DbContext
         )
-        New-EFPoshQuery -DBContext $DbContext -Entity 'TableOne'
-        Add-EFPoshQuery -Property Id -GreaterThan 50
-        $Results = Start-EFposhQuery -ToList
+        $Results = Search-EFPosh -Entity $DbContext.TableOne -Expression { $_.Id -gt 50 }
         $Results.Count | Should -Be 51
         foreach($result in $Results) {
             $Result.Id | Should -BeGreaterThan 50
@@ -143,9 +119,7 @@ Describe 'Can query with functions' {
             [string]$Name,
             [EFPosh.PoshContextInteractions]$DbContext
         )
-        New-EFPoshQuery -DBContext $DbContext -Entity 'TableOne'
-        Add-EFPoshQuery -Property Id -GreaterThanOrEqualTo 50
-        $Results = Start-EFposhQuery -ToList
+        $Results = Search-EFPosh -Entity $DbContext.TableOne -Expression { $_.Id -ge 50 }
         $Results.Count | Should -Be 52
         foreach($result in $Results) {
             $Result.Id | Should -BeGreaterThan 49
@@ -156,9 +130,7 @@ Describe 'Can query with functions' {
             [string]$Name,
             [EFPosh.PoshContextInteractions]$DbContext
         )
-        New-EFPoshQuery -DBContext $DbContext -Entity 'TableOne'
-        Add-EFPoshQuery -Property Id -LessThan 50
-        $Results = Start-EFposhQuery -ToList
+        $Results = Search-EFPosh -Entity $DbContext.TableOne -Expression { $_.Id -lt 50 }
         $Results.Count | Should -Be 49
         foreach($result in $Results) {
             $Result.Id | Should -BeLessThan 50
@@ -169,9 +141,7 @@ Describe 'Can query with functions' {
             [string]$Name,
             [EFPosh.PoshContextInteractions]$DbContext
         )
-        New-EFPoshQuery -DBContext $DbContext -Entity 'TableOne'
-        Add-EFPoshQuery -Property Id -LessThanOrEqualTo 50
-        $Results = Start-EFposhQuery -ToList
+        $Results = Search-EFPosh -Entity $DbContext.TableOne -Expression { $_.Id -le 50 }
         $Results.Count | Should -Be 50
         foreach($result in $Results) {
             $Result.Id | Should -BeLessOrEqual 50
@@ -182,10 +152,7 @@ Describe 'Can query with functions' {
             [string]$Name,
             [EFPosh.PoshContextInteractions]$DbContext
         )
-        New-EFPoshQuery -DBContext $DbContext -Entity 'TableOne'
-        Add-EFPoshQuery -Property Id -Equals 1 -And
-        Add-EFPoshQuery -Property Name -Contains 'Test'
-        $Results = Start-EFposhQuery -ToList
+        $Results = Search-EFPosh -Entity $DbContext.TableOne -Expression { $_.Id -eq 1 -and $_.Name -contains 'Test' }
         $Results.Count | Should -Be 1
         foreach($result in $Results) {
             $Result.Id | Should -Be 1
@@ -196,11 +163,7 @@ Describe 'Can query with functions' {
             [string]$Name,
             [EFPosh.PoshContextInteractions]$DbContext
         )
-        New-EFPoshQuery -DBContext $DbContext -Entity 'TableOne'
-        Add-EFPoshQuery -Property Id -Equals 1 -Or
-        Add-EFPoshQuery -Property Id -Equals 2 -Or
-        Add-EFPoshQuery -Property Id -Equals 3
-        $Results = Start-EFposhQuery -ToList
+        $Results = Search-EFPosh -Entity $DbContext.TableOne -Expression { $_.Id -eq 1 -or $_.Id -eq 2 -or $_.Id -eq 3 }
         $Results.Count | Should -Be 3
     }
     It 'Honors select list in <Name>' -TestCases $Global:DbContexts {
@@ -208,9 +171,7 @@ Describe 'Can query with functions' {
             [string]$Name,
             [EFPosh.PoshContextInteractions]$DbContext
         )
-        New-EFPoshQuery -DBContext $DbContext -Entity 'TableOne'
-        Add-EFPoshQuery -Property Id -Equals 1
-        $Results = Start-EFposhQuery -FirstOrDefault -Select 'Id'
+        $Results = Search-EFPosh -Entity $DbContext.TableOne -Expression { $_.Id -eq 1 } -Select 'Id'
         $Results.Name | Should -Be $null
         $Results.Id | Should -Be 1
         @($Results).Count | Should -Be 1
@@ -220,8 +181,7 @@ Describe 'Can query with functions' {
             [string]$Name,
             [EFPosh.PoshContextInteractions]$DbContext
         )
-        New-EFPoshQuery -DBContext $DbContext -Entity 'TableOne'
-        $Results = Start-EFposhQuery -FirstOrDefault -Select 'Id'
+        $Results = Search-EFPosh -Entity $DbContext.TableOne -Expression { $_.Id -eq 1 } -Select 'Id' -FirstOrDefault
         $Results[0].Name | Should -Be $null
         $Results[0].Id | Should -Be 1
     }

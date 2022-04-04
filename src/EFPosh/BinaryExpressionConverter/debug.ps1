@@ -10,8 +10,9 @@ $a = 'a'
 $CrazyExp = @('a','b')
 $HashExample = @{ 'Val1' = 'a2' }
 $ValName = 'Val1'
-$Expression = { $_."$PropName" -eq $HashExample.$ValName }
-$ConvertedExpression = ConvertTo-BinaryExpression -FuncType $Type -Expression $Expression
+
+$Expression = { $_."$0" -eq $1 }
+$ConvertedExpression = ConvertTo-BinaryExpression -FuncType $Type -Expression $Expression -Arguments @($PropName, $HashExample.$ValName)
 $ConvertedExpression
 $d = @("a")
 $Expression = { @("a") -contains $_.Name }

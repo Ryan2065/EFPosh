@@ -155,7 +155,7 @@ namespace BinaryExpressionConverter
                 }
             }
 
-            throw new Exception($"Could not expand {script}");
+            throw new Exception($"Could not expand {script} - Consider using -ArgumentList to pass arguments!");
         }
         private Expression GetExpression(ExpressionAst expAst)
         {
@@ -186,7 +186,7 @@ namespace BinaryExpressionConverter
                                 // This case is for $_."$Name" to expand $Name and get the property name
                                 if(propertyInfo == null && prop.Contains("$"))
                                 {
-                                    var value = GetPoshValue(prop);
+                                    var value = GetPoshValue(prop.TrimStart('"').TrimEnd('"'));
                                     propertyInfo = ty.GetProperties().Where(p => p.Name.ToLower() == value.ToString().ToLower()).FirstOrDefault();
                                 }
                                 ty = propertyInfo.PropertyType;
