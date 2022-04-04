@@ -1,6 +1,6 @@
 Import-Module Pester
 $VerbosePreference = 'Continue'
-$ErrorActionPreference = 'Continue'
+$ErrorActionPreference = 'Stop'
 
 Write-Verbose 'Building module with newest version'
 $ParentDirectory = ( Get-Item $PSScriptRoot ).Parent.FullName

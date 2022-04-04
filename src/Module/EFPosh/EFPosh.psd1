@@ -54,7 +54,7 @@ Description = 'Extends Entity Framework Core functionality to PowerShell'
 #RequiredModules = @('PoshQueryable')
 
 # Assemblies that must be loaded prior to importing this module
-RequiredAssemblies = @('.\Dependencies\EFPosh.dll')
+# RequiredAssemblies = @('.\Dependencies\EFPosh.dll')
 
 # Script files (.ps1) that are run in the caller's environment prior to importing this module.
 # ScriptsToProcess = @()

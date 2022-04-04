@@ -1,4 +1,4 @@
-
+$null = Add-Type -Path "$PSSCriptRoot\Dependencies\EFPosh.dll"
 Import-Module "$PSSCriptRoot\Dependencies\BinaryExpressionConverter.dll" -Force
 $CommandFiles = Get-ChildItem -Path "$PSScriptRoot\Commands" -Filter '*.ps1'
 foreach($file in $CommandFiles){

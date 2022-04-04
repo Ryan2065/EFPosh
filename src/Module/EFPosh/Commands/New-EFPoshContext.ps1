@@ -92,7 +92,6 @@ Function New-EFPoshContext{
     }
     $Script:LatestDBContext = $null
     $Script:LatestDBContext = [EFPosh.PoshContextInteractions]::new()
-    $Script:LatestDBContext.SetPsCmdletObject($PSCmdlet)
     $boolEnsureCreated = $false
     if($EnsureCreated){ $boolEnsureCreated = $true }
     $boolReadOnly = $false
