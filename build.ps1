@@ -77,5 +77,5 @@ $ModulePSD = Join-Path $ModuleLocation 'EFPosh.psd1'
 $CurrentVersion = (Get-Module $ModuleLocation -ListAvailable).Version
 $NewVersion = "$($CurrentVersion.Major).$($CurrentVersion.Minor).$($env:GITHUB_RUN_NUMBER)"
 
-(Get-Content $ModulePSD -Raw).Replace("'$CurrentVersion'", "'$($NewVersion)'") | Out-File $ModulePSD -Force
+(Get-Content $ModulePSD -Raw).Trim().Replace("'$CurrentVersion'", "'$($NewVersion)'") | Out-File $ModulePSD -Force
 #endregion
