@@ -10,6 +10,10 @@ namespace EFPosh.InformationSchemaDB
         {
 
         }
+#if NETFRAMEWORK
         public DbQuery<MSSQLInformationSchemaColumns> MSSQLInformationSchemaColumns { get; set; }
+#else
+        public DbSet<MSSQLInformationSchemaColumns> MSSQLInformationSchemaColumns { get; set; }
+#endif
     }
 }

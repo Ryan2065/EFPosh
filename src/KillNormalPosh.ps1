@@ -5,20 +5,46 @@
 #>
 
 
+$DebugRuntime = "net472"
+if($PSVersionTable.PSVersion.Major -gt 5){
+  $DebugRuntime = "net6.0"
+}
+
 $ErrorActionPreference = 'SilentlyContinue'
-#$null = Import-Module 'c:\Users\Ryan2\.vscode\extensions\ms-vscode.powershell-preview-2020.4.3\modules\PowerShellEditorServices\PowerShellEditorServices.psd1'; Start-EditorServices -HostName 'Visual Studio Code Host'  -AdditionalModules @('PowerShellEditorServices.VSCode') -BundledModulesPath 'c:\Users\Ryan2\.vscode\extensions\ms-vscode.powershell-preview-2020.4.3\modules' -EnableConsoleRepl -StartupBanner "=====> PowerShell Preview Integrated Console v2020.4.3 <=====" -LogLevel 'Normal' -LogPath 'c:\Users\Ryan2\.vscode\extensions\ms-vscode.powershell-preview-2020.4.3\logs\1589298796-bbb3adc4-f7a0-4247-b849-4827ca4a39561589298237173\EditorServices.log' -Stdio -SessionDetailsPath .\ -HostVersion 1.0 -HostProfileId 'PowerShell' -FeatureFlags @()
 $ErrorActionPreference = 'Stop'
-$null = Add-Type -Path "C:\users\ryan2\OneDrive\Code\EFPosh\src\EFPosh\EFPosh\bin\Debug\net472\EFPosh.dll"
-Import-Module 'C:\Users\Ryan2\OneDrive\Code\EFPosh\src\EFPosh\BinaryExpressionConverter\bin\Release\net472\BinaryExpressionConverter.dll' -Force
 
+Function Join-MultiplePaths{
+  Param(
+      [string[]]$Paths
+      )
+  if($paths.Count -lt 2){
+    return $Paths
+  }
+  $newPath = Join-Path $Paths[0] $Paths[1]
+  if($paths.count -gt 2){
+    $newPathArray = @($newPath)
+    for($i = 2; $i -lt $paths.count; $i++){
+      $newPathArray += $paths[$i]
+    }
+    Join-MultiplePaths $newPathArray
+  }
+  else{
+    $newPath
+  }
+}
+$efPoshDLL = Join-MultiplePaths @($PSScriptRoot, "EFPosh", "EFPosh", "bin", "debug", $DebugRuntime, "EFPosh.dll")
+$BinaryExpDll = Join-MultiplePaths @($PSScriptRoot, "EFPosh", "EFPosh", "bin", "debug", $DebugRuntime, "BinaryExpressionConverter.dll")
+$null = Add-Type -Path $efPoshDLL
+Import-Module $BinaryExpDll -Force
 
+$sqlFile = Join-MultiplePaths @($PSScriptRoot, "bin", "sql.sqlite")
 
-Remove-Item 'c:\users\ryan2\sql.sqlite' -Force -ErrorAction SilentlyContinue
+Remove-Item $sqlFile -Force -ErrorAction SilentlyContinue
 
 $VerbosePreference = 'Continue'
 $DebugPreference = 'Continue'
 
-$ConnectionString = "Filename=c:\users\ryan2\sql.sqlite"
+$ConnectionString = "Filename=$sqlFile"
 Class MyTest {
     [int]$MyTestId
     [string]$test

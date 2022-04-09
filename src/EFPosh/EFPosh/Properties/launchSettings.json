@@ -4,6 +4,16 @@
       "commandName": "Executable",
       "executablePath": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
       "commandLineArgs": "-NoExit -File C:\\Users\\Ryan2\\OneDrive\\Code\\EFPosh\\src\\KillNormalPosh.ps1"
+    },
+    "EFPoshPWSH": {
+      "commandName": "Executable",
+      "executablePath": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
+      "commandLineArgs": "-NoExit -File C:\\Users\\Ryan2\\OneDrive\\Code\\EFPosh\\src\\KillNormalPosh.ps1",
+      "nativeDebugging": true
+    },
+    "EFPoshWSL": {
+      "commandName": "Executable",
+      "executablePath": "wsl"
     }
   }
 }

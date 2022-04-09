@@ -1,11 +1,12 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net48;net6.0</TargetFrameworks>
-    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
-    <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
-    <IsPackageable>false</IsPackageable>
-    <RestoreProjectStyle>PackageReference</RestoreProjectStyle>
+      <TargetFrameworks>net472;net6.0</TargetFrameworks>
+	  <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
+	  <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+	  <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
+	  <IsPackageable>false</IsPackageable>
+	  <RestoreProjectStyle>PackageReference</RestoreProjectStyle>
   </PropertyGroup>
 
   <ItemGroup>
@@ -13,8 +14,8 @@
 	  <PackageReference Include="Microsoft.PowerShell.SDK" Version="7.2.*" Condition="'$(TargetFramework)' == 'net6.0'">
 		  <PrivateAssets>All</PrivateAssets>
 	  </PackageReference>
-    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="2.2.6" Condition="'$(TargetFramework)' == 'net48'"/>
-    <PackageReference Include="PowerShellStandard.Library" Version="5.1.1" Condition="'$(TargetFramework)' == 'net48'">
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="2.2.6" Condition="'$(TargetFramework)' == 'net472'"/>
+    <PackageReference Include="PowerShellStandard.Library" Version="5.1.1" Condition="'$(TargetFramework)' == 'net472'">
       <PrivateAssets>All</PrivateAssets>
     </PackageReference>
   </ItemGroup>

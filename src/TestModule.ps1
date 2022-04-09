@@ -1,3 +1,7 @@
+using module C:\Users\Ryan2\OneDrive\Code\EFPosh\src\Module\EFPosh
+using namespace System.ComponentModel.DataAnnotations.Schema;
+using namespace System.ComponentModel.DataAnnotations;
+
 if($PSScriptRoot){
     $ScriptLocation = $PSScriptRoot
 }
@@ -7,10 +11,11 @@ else{
 $Env:EFPoshLog = 'true'
 if($null -eq ( Get-Module EFPosh )){
     . "$PSScriptRoot\buildModule.ps1"
+    Import-Module "$ScriptLocation\Module\EFPosh" -Force
 }
 
 $ErrorActionPreference = 'Continue'
-Import-Module "$ScriptLocation\Module\EFPosh" -Force
+
 
 $DBFile = "$ScriptLocation\bin\MyDatabase.sqlite"
 
@@ -22,24 +27,26 @@ if(Test-Path $DBFile){
 }
 
 Class TestTableOne {
-    [int]$MyUniqueId
+    [Key()]
+    [int] $MyUniqueId
     [string]$Name
     [TestTableTwo]$RelationshipOne
 }
 
 Class TestTableTwo {
+    [Key()]
     [int]$MyOtherUniqueId
+
+    [ForeignKey("RelationshipTwo")]
     [int]$MyUniqueId
     [string]$Name
     [TestTableOne]$RelationshipTwo
 }
 
 $Tables = @(
-    ( New-EFPoshEntityDefinition -Type 'TestTableOne' -PrimaryKey 'MyUniqueId' ),
-    ( New-EFPoshEntityDefinition -Type 'TestTableTwo' -PrimaryKey 'MyOtherUniqueId' )
+    ( New-EFPoshEntityDefinition -Type 'TestTableOne'),
+    ( New-EFPoshEntityDefinition -Type 'TestTableTwo' )
 )
-
-#$Relationship = @( New-EFPoshEntityRelationship -SourceTypeName 'TestTableOne' -TargetTypeName 'TestTableTwo' -RelationshipType 'OneToOne' -SourceKey MyUniqueId -TargetKey MyUniqueId2 -SourceRelationshipProperty 'RelationshipOne' -TargetRelationshipProperty 'RelationshipTwo' )
 
 $Context = New-EFPoshContext -SQLiteFile $DBFile -Entities $Tables -EnsureCreated
 

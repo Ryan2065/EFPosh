@@ -4,9 +4,10 @@ $ErrorActionPreference = 'Stop'
 
 Write-Verbose 'Building module with newest version'
 $ParentDirectory = ( Get-Item $PSScriptRoot ).Parent.FullName
-. "$ParentDirectory\buildModule.ps1"
-
+ #. "$ParentDirectory\buildModule.ps1"
+write-host "importing"
 Import-Module "$ParentDirectory\Module\EFPosh" -Force
+write-host "finished importing"
 try{
     $Global:TestSettings = Get-Content "$PSScriptRoot\bin\TestSettings.json" | ConvertFrom-JSON
 }

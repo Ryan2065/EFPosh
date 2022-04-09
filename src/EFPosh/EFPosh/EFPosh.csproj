@@ -1,11 +1,13 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net48;net6.0</TargetFrameworks>
+    <TargetFrameworks>net472;net6.0</TargetFrameworks>
+	<ProduceReferenceAssembly>false</ProduceReferenceAssembly>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
     <IsPackageable>false</IsPackageable>
     <RestoreProjectStyle>PackageReference</RestoreProjectStyle>
+	<CopyLocalLockFileAssemblies Condition="'$(Configuration)'=='Debug'">true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
 
   <ItemGroup>
@@ -13,19 +15,21 @@
 	  <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="6.0.*" Condition="'$(TargetFramework)' == 'net6.0'" />
 	  <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="6.0.*" Condition="'$(TargetFramework)' == 'net6.0'" />
 	  <PackageReference Include="Microsoft.Extensions.Logging.Configuration" Version="6.0.*" Condition="'$(TargetFramework)' == 'net6.0'" />
-	      <PackageReference Include="Microsoft.PowerShell.SDK" Version="7.2.*" Condition="'$(TargetFramework)' == 'net6.0'">
-		   <PrivateAssets>All</PrivateAssets>
-	  </PackageReference>
-    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="2.2.6" Condition="'$(TargetFramework)' == 'net48'" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="2.2.6" Condition="'$(TargetFramework)' == 'net48'" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="2.2.6" Condition="'$(TargetFramework)' == 'net48'" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Configuration" Version="2.2.0" Condition="'$(TargetFramework)' == 'net48'" />
-    <PackageReference Include="PowerShellStandard.Library" Version="5.1.1" Condition="'$(TargetFramework)' == 'net48'">
-		   <PrivateAssets>All</PrivateAssets>
-	  </PackageReference>
-    
-    
-    
+	  <PackageReference Include="Microsoft.PowerShell.SDK" Version="7.2.*" Condition="'$(TargetFramework)' == 'net6.0'" PrivateAssets="All" />
+	  <PackageReference Include="SQLitePCLRaw.core" Version="2.0.7" Condition="'$(TargetFramework)' == 'net6.0'" />
+	  <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="2.0.7" Condition="'$(TargetFramework)' == 'net6.0'" />   
+	  
+      <PackageReference Include="Microsoft.EntityFrameworkCore" Version="2.2.6" Condition="'$(TargetFramework)' == 'net472'" />
+      <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="2.2.6" Condition="'$(TargetFramework)' == 'net472'" />
+      <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="2.2.6" Condition="'$(TargetFramework)' == 'net472'" />
+      <PackageReference Include="Microsoft.Extensions.Logging.Configuration" Version="2.2.0" Condition="'$(TargetFramework)' == 'net472'" />
+	  <PackageReference Include="PowerShellStandard.Library" Version="5.1.1" Condition="'$(TargetFramework)' == 'net472'" PrivateAssets="All" />
+	  <PackageReference Include="System.ComponentModel.Annotations" Version="5.0.0" />
+
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\BinaryExpressionConverter\BinaryExpressionConverter.csproj" />
   </ItemGroup>
 
 

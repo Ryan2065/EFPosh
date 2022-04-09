@@ -12,7 +12,7 @@
 RootModule = '.\EFPosh.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.2.6'
+ModuleVersion = '2.0.0'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -74,7 +74,6 @@ FunctionsToExport = @(
     'New-EFPoshEntityDefinition', 
     'Start-EFPoshModel', 
     'Add-EFPoshModelEntity',
-    'New-EFPoshEntityRelationship',
     'Search-EFPosh'
 )
 
@@ -82,7 +81,7 @@ FunctionsToExport = @(
 CmdletsToExport = @()
 
 # Variables to export from this module
-VariablesToExport = '*'
+VariablesToExport = @()
 
 # Aliases to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no aliases to export.
 AliasesToExport = @()
@@ -104,7 +103,7 @@ PrivateData = @{
         # Tags applied to this module. These help with module discovery in online galleries.
         Tags = @('EntityFramework','ORM')
         
-        #Prerelease = 'alpha'
+        Prerelease = 'alpha'
 
         # A URL to the license for this module.
         LicenseUri = 'https://github.com/Ryan2065/EFPosh/blob/master/LICENSE'
@@ -116,7 +115,7 @@ PrivateData = @{
         # IconUri = ''
 
         # ReleaseNotes of this module
-        ReleaseNotes = 'Fixed bugs with Contains'
+        #ReleaseNotes = 'Fixed bugs with Contains'
 
         # Prerelease string of this module
         # Prerelease = ''
@@ -138,4 +137,15 @@ PrivateData = @{
 # DefaultCommandPrefix = ''
 
 }
+
+
+
+
+
+
+
+
+
+
+
 

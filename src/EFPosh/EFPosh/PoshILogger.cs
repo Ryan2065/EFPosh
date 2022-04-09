@@ -26,6 +26,7 @@ namespace EFPosh
         }
         public ILogger CreateLogger(string categoryName) 
         {
+            if (string.IsNullOrEmpty(categoryName)) { categoryName = "Default"; }
             return _loggers.GetOrAdd(categoryName, p => new PoshILogger(categoryName, GetCurrentConfig));
         }
         private PoshILoggerConfiguration GetCurrentConfig() => _currentConfig;

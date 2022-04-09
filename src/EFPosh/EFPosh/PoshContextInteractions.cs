@@ -7,6 +7,12 @@ using System.IO;
 using System.Dynamic;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using System.Runtime.InteropServices;
+#if NET6_0
+using Microsoft.Extensions.DependencyModel;
+using System.Runtime.Loader;
+using System.Text.Json.Nodes;
+#endif
 
 namespace EFPosh
 {
@@ -16,12 +22,54 @@ namespace EFPosh
         private Dictionary<string, string> FromSqlEntities;
         public PoshContextInteractions()
         {
+
             AppDomain currentDomain = AppDomain.CurrentDomain;
             dllPathsToCheck = new List<string>();
-            dllPathsToCheck.Add(Path.GetDirectoryName(typeof(PoshContextInteractions).Assembly.Location));
+            FindFoldersToCheckForDlls();
             currentDomain.AssemblyResolve += new ResolveEventHandler(PoshResolveEventHandler);
+#if NET6_0
+            NativeLibrary.SetDllImportResolver(typeof(SQLitePCL.SQLite3Provider_e_sqlite3).Assembly, NativeAssemblyResolver);
+#endif
             FromSqlEntities = new Dictionary<string, string>();
         }
+#if NET6_0
+        static IntPtr NativeAssemblyResolver(string libraryName, Assembly assembly, DllImportSearchPath? searchPath)
+        {
+            if (!libraryName.Equals("e_sqlite3", StringComparison.OrdinalIgnoreCase))
+                return IntPtr.Zero;
+            var currentFolder = Path.GetDirectoryName(typeof(PoshContextInteractions).Assembly.Location);
+            IntPtr libHandle = IntPtr.Zero;
+            string dllPath = "";
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && RuntimeInformation.OSArchitecture == Architecture.X64)
+            {
+                dllPath = Path.Combine(currentFolder, "runtimes", "win-x64", "native", "e_sqlite3.dll");
+            }
+            else if(RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && RuntimeInformation.OSArchitecture == Architecture.X86)
+            {
+                dllPath = Path.Combine(currentFolder, "runtimes", "win-x86", "native", "e_sqlite3.dll");
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && RuntimeInformation.OSArchitecture == Architecture.X64)
+            {
+                dllPath = Path.Combine(currentFolder, "runtimes", "linux-x64", "native", "libe_sqlite3.so");
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                dllPath = Path.Combine(currentFolder, "runtimes", "osx", "native", "libe_sqlite3.dylib");
+            }
+            if (File.Exists(dllPath))
+            {
+                NativeLibrary.TryLoad(dllPath, assembly, searchPath, out libHandle);
+            }
+            return libHandle;
+        }
+#endif
+
+        private static void FindFoldersToCheckForDlls()
+        {
+            var assemblyFolder = Path.GetDirectoryName(typeof(PoshContextInteractions).Assembly.Location);
+            dllPathsToCheck.Add(assemblyFolder);
+        }
+
         private static Assembly PoshResolveEventHandler(object sender, ResolveEventArgs args)
         {
             var dllNeeded = args.Name.Split(',')[0] + ".dll";
@@ -30,8 +78,7 @@ namespace EFPosh
                 var fullDLLPath = Path.Combine(directoryInfo, dllNeeded);
                 if (File.Exists(fullDLLPath))
                 {
-                    var bytes = System.IO.File.ReadAllBytes(fullDLLPath);
-                    return Assembly.Load(bytes);
+                    return Assembly.LoadFrom(fullDLLPath);
                 }
             }
             return null;
@@ -275,4 +322,5 @@ namespace EFPosh
             return _poshContext.Model.GetEntityTypes().Select(p => p.ClrType).Select(d => d.Name).ToList();
         }
     }
+    
 }

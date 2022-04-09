@@ -35,19 +35,19 @@ namespace EFPosh
                 {
                     modelBuilder.Entity(t.Type).HasKey(t.PrimaryKeys);
                 }
-                string tableName = string.IsNullOrEmpty(t.TableName) ? t.TableName : t.Type.Name;
-                string schema = string.IsNullOrEmpty(t.Schema) ? t.Schema : null;
+                string tableName = string.IsNullOrEmpty(t.TableName) ? t.Type.Name : t.TableName;
+                string schema = string.IsNullOrEmpty(t.Schema) ? null : t.Schema;
                 if (t.Keyless)
                 {
 #if NETFRAMEWORK
-                    modelBuilder.Query(t.Type).ToView(t.TableName, schema);
+                    modelBuilder.Query(t.Type).ToView(tableName, schema);
 #else
-                    modelBuilder.Entity(t.Type).ToView(t.TableName, schema);
+                    modelBuilder.Entity(t.Type).ToView(tableName, schema);
 #endif
                 }
                 else
                 {
-                    modelBuilder.Entity(t.Type).ToTable(t.TableName, schema);
+                    modelBuilder.Entity(t.Type).ToTable(tableName, schema);
                 }
             }
         }
