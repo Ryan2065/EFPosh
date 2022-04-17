@@ -17,7 +17,7 @@
 	  <PackageReference Include="Microsoft.Extensions.Logging.Configuration" Version="6.0.*" Condition="'$(TargetFramework)' == 'net6.0'" />
 	  <PackageReference Include="Microsoft.PowerShell.SDK" Version="7.2.*" Condition="'$(TargetFramework)' == 'net6.0'" PrivateAssets="All" />
 	  <PackageReference Include="SQLitePCLRaw.core" Version="2.0.7" Condition="'$(TargetFramework)' == 'net6.0'" />
-	  <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="2.0.7" Condition="'$(TargetFramework)' == 'net6.0'" />   
+	  <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="2.0.7" Condition="'$(TargetFramework)' == 'net6.0'" />
 	  
       <PackageReference Include="Microsoft.EntityFrameworkCore" Version="2.2.6" Condition="'$(TargetFramework)' == 'net472'" />
       <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="2.2.6" Condition="'$(TargetFramework)' == 'net472'" />

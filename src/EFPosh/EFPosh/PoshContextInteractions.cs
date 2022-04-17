@@ -8,98 +8,70 @@ using System.Dynamic;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System.Runtime.InteropServices;
-#if NET6_0
-using Microsoft.Extensions.DependencyModel;
-using System.Runtime.Loader;
-using System.Text.Json.Nodes;
-#endif
+using Microsoft.EntityFrameworkCore.Diagnostics;
 
 namespace EFPosh
 {
     public class PoshContextInteractions : DynamicObject
     {
-        private static List<string> dllPathsToCheck;
+        private PoshILogger _logger;
         private Dictionary<string, string> FromSqlEntities;
+        private DbContext _poshContext;
         public PoshContextInteractions()
         {
-
+            _logger = new PoshILogger(LogLevel.Trace);
             AppDomain currentDomain = AppDomain.CurrentDomain;
-            dllPathsToCheck = new List<string>();
-            FindFoldersToCheckForDlls();
-            currentDomain.AssemblyResolve += new ResolveEventHandler(PoshResolveEventHandler);
+            try
+            {
+
+            currentDomain.AssemblyResolve += new ResolveEventHandler(AssemblyResolvers.PoshResolveEventHandler);
 #if NET6_0
-            NativeLibrary.SetDllImportResolver(typeof(SQLitePCL.SQLite3Provider_e_sqlite3).Assembly, NativeAssemblyResolver);
+            NativeLibrary.SetDllImportResolver(typeof(SQLitePCL.SQLite3Provider_e_sqlite3).Assembly, AssemblyResolvers.NativeAssemblyResolver);
 #endif
+            }
+            catch(Exception ex)
+            {
+                _logger.LogDebug($"Could not load assembly resolver - Error {ex.Message}");
+            }
             FromSqlEntities = new Dictionary<string, string>();
         }
-#if NET6_0
-        static IntPtr NativeAssemblyResolver(string libraryName, Assembly assembly, DllImportSearchPath? searchPath)
-        {
-            if (!libraryName.Equals("e_sqlite3", StringComparison.OrdinalIgnoreCase))
-                return IntPtr.Zero;
-            var currentFolder = Path.GetDirectoryName(typeof(PoshContextInteractions).Assembly.Location);
-            IntPtr libHandle = IntPtr.Zero;
-            string dllPath = "";
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && RuntimeInformation.OSArchitecture == Architecture.X64)
-            {
-                dllPath = Path.Combine(currentFolder, "runtimes", "win-x64", "native", "e_sqlite3.dll");
-            }
-            else if(RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && RuntimeInformation.OSArchitecture == Architecture.X86)
-            {
-                dllPath = Path.Combine(currentFolder, "runtimes", "win-x86", "native", "e_sqlite3.dll");
-            }
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && RuntimeInformation.OSArchitecture == Architecture.X64)
-            {
-                dllPath = Path.Combine(currentFolder, "runtimes", "linux-x64", "native", "libe_sqlite3.so");
-            }
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-            {
-                dllPath = Path.Combine(currentFolder, "runtimes", "osx", "native", "libe_sqlite3.dylib");
-            }
-            if (File.Exists(dllPath))
-            {
-                NativeLibrary.TryLoad(dllPath, assembly, searchPath, out libHandle);
-            }
-            return libHandle;
-        }
+#if NET6_0_OR_GREATER
+        public static readonly ILoggerFactory PoshLoggerFactory = LoggerFactory.Create(builder => { 
+                                                                    builder.SetMinimumLevel(LogLevel.Warning)
+                                                                            .AddFilter("Microsoft.EntityFrameworkCore.Database.Command", LogLevel.Information)
+                                                                            .AddPoshLogger(config =>
+                                                                            {
+                                                                                config.LogLevelStreamMappings.Add(LogLevel.Information, PoshLogStream.Debug);
+                                                                                config.LogLevelStreamMappings.Add(LogLevel.None, PoshLogStream.Debug);
+                                                                            });
+                                                                          });
 #endif
-
-        private static void FindFoldersToCheckForDlls()
+        public void SetDependencyFolder(string dependencyFolder)
         {
-            var assemblyFolder = Path.GetDirectoryName(typeof(PoshContextInteractions).Assembly.Location);
-            dllPathsToCheck.Add(assemblyFolder);
-        }
-
-        private static Assembly PoshResolveEventHandler(object sender, ResolveEventArgs args)
-        {
-            var dllNeeded = args.Name.Split(',')[0] + ".dll";
-            foreach(var directoryInfo in dllPathsToCheck)
+            if(!AssemblyResolvers.dllPathsToCheck.Any(p => p == dependencyFolder))
             {
-                var fullDLLPath = Path.Combine(directoryInfo, dllNeeded);
-                if (File.Exists(fullDLLPath))
-                {
-                    return Assembly.LoadFrom(fullDLLPath);
-                }
+                AssemblyResolvers.dllPathsToCheck.Add(dependencyFolder);
             }
-            return null;
         }
-
+        
         static IServiceProvider BuildServiceProvider(IServiceCollection services)
         {
-            services.AddLogging(p => p.SetMinimumLevel(LogLevel.Warning).AddFilter("Microsoft.EntityFrameworkCore.Database.Command", LogLevel.Information).AddPoshLogger(config =>
+            services.AddLogging(p => p.SetMinimumLevel(LogLevel.Warning).AddFilter("Microsoft.EntityFrameworkCore.Database.Command", LogLevel.Trace).AddPoshLogger(config =>
             {
                 config.LogLevelStreamMappings.Add(LogLevel.Information, PoshLogStream.Debug);
                 config.LogLevelStreamMappings.Add(LogLevel.None, PoshLogStream.Debug);
             }));
+
             var t = typeof(ServiceCollectionContainerBuilderExtensions).GetTypeInfo();
             var BuildServiceProviderMethod = t.GetMethod(nameof(BuildServiceProvider), new Type[] { typeof(IServiceCollection), typeof(bool) });
             return (IServiceProvider)BuildServiceProviderMethod.Invoke(null, new object[] { services, false });
         }
-        private DbContext _poshContext;
+        
         public void NewDbContext<T>(
             string connectionString,
             string dbType,
             bool EnsureCreated,
+            bool RunMigrations,
             bool ReadOnly,
             PoshEntity[] Types = null
         )
@@ -120,9 +92,14 @@ namespace EFPosh
                     coll = coll.AddEntityFrameworkSqlServer();
                     break;
             }
+#if NET6_0_OR_GREATER
+            dbOptions.UseLoggerFactory(PoshLoggerFactory);
+#else
             var sp = BuildServiceProvider(coll);
             dbOptions.UseInternalServiceProvider(sp);
-            
+#endif
+
+
             DbContext dbContext = null;
             if(typeof(T) == typeof(PoshContext))
             {
@@ -130,10 +107,17 @@ namespace EFPosh
             }
             else
             {
+                _logger.LogDebug($"Creating new instance of {typeof(T).Name}");
                 dbContext = (DbContext)Activator.CreateInstance(typeof(T), new object[] { dbOptions.Options });
             }
-            if (EnsureCreated)
+            if (RunMigrations)
             {
+                _logger.LogDebug("Running Migrate - If the db is not on the newest version, it will be updated");
+                dbContext.Database.Migrate();
+            }
+            else if (EnsureCreated)
+            {
+                _logger.LogDebug("Running EnsureCreated - If the db is not created yet, it will be created now.");
                 dbContext.Database.EnsureCreated();
             }
             if (ReadOnly)
@@ -141,7 +125,8 @@ namespace EFPosh
                 dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
             }
             _poshContext = dbContext;
-            foreach(var t in Types)
+            if(Types == null) { return; }
+            foreach (var t in Types)
             {
                 if (!String.IsNullOrEmpty(t.FromSql))
                 {
@@ -153,30 +138,31 @@ namespace EFPosh
             string connectionString,
             string dbType,
             bool EnsureCreated,
+            bool RunMigrations,
             bool ReadOnly,
             string dllPath,
             string ContextClassName
         )
         {
+            _logger.LogDebug($"Attempting to load an exsiting DbContext at {dllPath}");
             var assembly = Assembly.LoadFile(dllPath);
-            dllPathsToCheck.Add(Path.GetDirectoryName(assembly.Location));
-            var type = assembly.GetTypes().Where(p => p.Name.ToLower().Equals(ContextClassName.ToLower()) ).FirstOrDefault();
+            var type = assembly.GetTypes().Where(p => p.Name.ToLower().Equals(ContextClassName.ToLower())).FirstOrDefault();
             PoshEntity[] Types = null;
             typeof(PoshContextInteractions)
                     .GetMethod("NewDbContext")
                     .MakeGenericMethod(type)
-                    .Invoke(this, new object[] { connectionString, dbType, EnsureCreated, ReadOnly, Types });
-            
+                    .Invoke(this, new object[] { connectionString, dbType, EnsureCreated, RunMigrations, ReadOnly, Types });
         }
         public void NewPoshContext(
             string connectionString,
             string dbType,
             PoshEntity[] Types,
             bool EnsureCreated,
+            bool RunMigrations,
             bool ReadOnly
         )
         {
-            NewDbContext<PoshContext>(connectionString, dbType, EnsureCreated, ReadOnly, Types);
+            NewDbContext<PoshContext>(connectionString, dbType, EnsureCreated, RunMigrations, ReadOnly, Types);
         }
         
         public DbContext DBContext
@@ -317,9 +303,15 @@ namespace EFPosh
             }
             return result == null ? false : true;
         }
-        public List<string> GetEntities()
+        public IEnumerable<string> GetEntities()
         {
-            return _poshContext.Model.GetEntityTypes().Select(p => p.ClrType).Select(d => d.Name).ToList();
+            foreach (var prop in _poshContext.GetType().GetProperties())
+            {
+                if (typeof(IQueryable).IsAssignableFrom(prop.PropertyType))
+                {
+                    yield return prop.Name;
+                }
+            }
         }
     }
     

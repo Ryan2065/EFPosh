@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.EntityFrameworkCore.Internal;
 using System.Linq.Expressions;
+using Microsoft.Extensions.Logging;
 using System.Reflection;
 
 namespace EFPosh
@@ -18,6 +19,7 @@ namespace EFPosh
         private readonly DbContext _dbContext;
         public PoshEntityColumn(DbContext dbContext)
         {
+
             var ets = dbContext.Model.GetEntityTypes();
             foreach (var et in ets)
             {
@@ -111,17 +113,46 @@ namespace EFPosh
 #endif
         }
 
-        public void Include(string propertyName)
+        public void Include(string propertyName, string thenInclude = "")
         {
-            var methodInfo = this.GetType().GetMethod("IncludeInternal", BindingFlags.NonPublic | BindingFlags.Instance);
-            var propertyInfo = typeof(T).GetProperties().Where(p => p.Name.Equals(propertyName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
-            var gMethod = methodInfo.MakeGenericMethod(propertyInfo.PropertyType);
-            gMethod.Invoke(this, new[] { propertyInfo.Name });
+            
+            var propertyInfo = typeof(T).GetProperties().Where(p => p.Name.Equals(propertyName, StringComparison.OrdinalIgnoreCase)).First();
+
+            if (string.IsNullOrEmpty(thenInclude))
+            {
+                var methodInfo = this.GetType().GetMethod("IncludeInternal", BindingFlags.NonPublic | BindingFlags.Instance);
+                var gMethod = methodInfo.MakeGenericMethod(propertyInfo.PropertyType);
+                gMethod.Invoke(this, new[] { propertyInfo.Name });
+            }
+            else
+            {
+                var methodInfo = this.GetType().GetMethod("ThenIncludeInternal", BindingFlags.NonPublic | BindingFlags.Instance);
+                var propType = propertyInfo.PropertyType;
+                if (propType.GetGenericArguments().Count() == 1)
+                {
+                    propType = propertyInfo.PropertyType.GetGenericArguments()[0];
+                }
+                var thenPropertyInfo = propType.GetProperties().Where(p => p.Name.Equals(thenInclude, StringComparison.OrdinalIgnoreCase)).First();
+                var gMethod = methodInfo.MakeGenericMethod(propertyInfo.PropertyType, propType, thenPropertyInfo.PropertyType);
+                gMethod.Invoke(this, new[] { propertyInfo.Name, thenPropertyInfo.Name });
+            }
         }
 
         internal void IncludeInternal<TKey>(string propertyName)
         {
-            _modifiedIQueryable = _modifiedIQueryable.Include(GetSinglePropertyExpression<TKey>(propertyName));
+            _modifiedIQueryable = _modifiedIQueryable.Include(GetSinglePropertyExpression<T, TKey>(propertyName));
+        }
+
+        internal void ThenIncludeInternal<TKey, TKeyNotEnumerable, TSecondKey>(string propertyName, string thenIncludeProperty)
+        {
+            if (typeof(TKey).GetGenericArguments().Count() == 1)
+            {
+                _modifiedIQueryable = _modifiedIQueryable.Include(GetSinglePropertyExpression<T, IEnumerable<TKeyNotEnumerable>>(propertyName)).ThenInclude(GetSinglePropertyExpression<TKeyNotEnumerable, TSecondKey>(thenIncludeProperty));
+            }
+            else
+            {
+                _modifiedIQueryable = _modifiedIQueryable.Include(GetSinglePropertyExpression<T, TKey>(propertyName)).ThenInclude(GetSinglePropertyExpression<TKey, TSecondKey>(thenIncludeProperty));
+            }
         }
 
         public void Take(int take)
@@ -147,23 +178,23 @@ namespace EFPosh
             }
         }
 
-        internal Expression<Func<T, TKey>> GetSinglePropertyExpression<TKey>(string propertyName)
+        internal Expression<Func<TKey, TKey2>> GetSinglePropertyExpression<TKey, TKey2>(string propertyName)
         {
-            
-            var body = Expression.Property(_p, propertyName);
+            var newParam = Expression.Parameter(typeof(TKey), "newP");
+            var body = Expression.Property(newParam, propertyName);
             ParameterExpression[] array = new ParameterExpression[1];
-            array[0] = _p;
-            return Expression.Lambda<Func<T, TKey>>(body, array);
+            array[0] = newParam;
+            return Expression.Lambda<Func<TKey, TKey2>>(body, array);
         }
 
         internal void OrderByInternal<TKey>(string propertyName)
         {
-            _modifiedIQueryable = _modifiedIQueryable.OrderBy(GetSinglePropertyExpression<TKey>(propertyName));
+            _modifiedIQueryable = _modifiedIQueryable.OrderBy(GetSinglePropertyExpression<T, TKey>(propertyName));
         }
 
         internal void OrderByDescendingInternal<TKey>(string propertyName)
         {
-            _modifiedIQueryable = _modifiedIQueryable.OrderByDescending(GetSinglePropertyExpression<TKey>(propertyName));
+            _modifiedIQueryable = _modifiedIQueryable.OrderByDescending(GetSinglePropertyExpression<T, TKey>(propertyName));
         }
 
         public void OrderBy(string propertyName)

@@ -41,8 +41,8 @@ $sqlFile = Join-MultiplePaths @($PSScriptRoot, "bin", "sql.sqlite")
 
 Remove-Item $sqlFile -Force -ErrorAction SilentlyContinue
 
-$VerbosePreference = 'Continue'
-$DebugPreference = 'Continue'
+$Global:VerbosePreference = 'Continue'
+$Global:DebugPreference = 'Continue'
 
 $ConnectionString = "Filename=$sqlFile"
 Class MyTest {
@@ -69,7 +69,7 @@ $Script:LatestDBContext = [EFPosh.PoshContextInteractions]::new()
       $newEntity,
       $newEntity2
   )
-  $null = $Script:LatestDBContext.NewPoshContext($ConnectionString, $DBType, $Entities, $true, $false)
+  $null = $Script:LatestDBContext.NewPoshContext($ConnectionString, $DBType, $Entities, $true,$false, $false)
   $test = [MyTest]::New();
 $test.test = "my test"
 $Script:LatestDBContext.Add($test)

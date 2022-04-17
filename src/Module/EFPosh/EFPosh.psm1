@@ -8,7 +8,6 @@ else{
     Import-Module "$PSScriptRoot\Dependencies\net472\BinaryExpressionConverter.dll" -Force
 }
 
-
 $CommandFiles = Get-ChildItem -Path "$PSScriptRoot\Commands" -Filter '*.ps1'
 foreach($file in $CommandFiles){
     . $file.FullName
@@ -19,4 +18,4 @@ foreach($file in $PrivateCommandFiles){
     . $file.FullName
 }
 
-Export-ModuleMember -Function $CommandFiles.BaseName
+Export-ModuleMember -Function $CommandFiles.BaseName -Cmdlet 'ConvertTo-BinaryExpression'

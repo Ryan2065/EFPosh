@@ -11,7 +11,7 @@ namespace EFPosh
 {
     public class PoshILoggerConfiguration
     {
-        public HashSet<LogLevel> Levels = new HashSet<LogLevel>() { LogLevel.Information };
+        public LogLevel Level { get; set; } = LogLevel.Information;
         public Dictionary<LogLevel, PoshLogStream> LogLevelStreamMappings { get; set; } = new Dictionary<LogLevel, PoshLogStream>();
     }
     public class PoshILoggerProvider : ILoggerProvider
@@ -39,14 +39,31 @@ namespace EFPosh
     }
     public class PoshILogger : ILogger
     {
-        private readonly Func<PoshILoggerConfiguration> _logConfig;
+        private readonly PoshILoggerConfiguration _logConfig;
         private readonly string _name;
         private System.Management.Automation.PowerShell _powerShell;
         private bool _enabled;
         public PoshILogger(string name, Func<PoshILoggerConfiguration> config)
         {
             _name = name;
-            _logConfig = config;
+            _logConfig = config();
+            InitialSetup();
+        }
+        public PoshILogger()
+        {
+            _logConfig = new PoshILoggerConfiguration();
+            InitialSetup();
+        }
+
+        public PoshILogger(LogLevel level)
+        {
+            _logConfig = new PoshILoggerConfiguration();
+            _logConfig.Level = level;
+            InitialSetup();
+        }
+
+        private void InitialSetup()
+        {
             try
             {
                 _powerShell = System.Management.Automation.PowerShell.Create(System.Management.Automation.RunspaceMode.CurrentRunspace);
@@ -67,7 +84,7 @@ namespace EFPosh
         public bool IsEnabled(LogLevel logLevel)
         {
             if(_enabled == false) { return false; }
-            return _logConfig().Levels.Contains(logLevel);
+            return logLevel >= _logConfig.Level;
         }
 
         private System.Management.Automation.PowerShell GetPowerShellObject()
@@ -93,7 +110,7 @@ namespace EFPosh
             if(_enabled == false) { return; }
             var poshCommand = GetPowerShellObject();
             if(poshCommand == null) { return; }
-
+            
             switch (logStream)
             {
                 case PoshLogStream.Output:
@@ -103,11 +120,11 @@ namespace EFPosh
                 case PoshLogStream.Error:
                     if(exceptionRecord != null)
                     {
-                        poshCommand.Commands.AddScript("Param($exc, $message) Write-Error -Exception $exc -Message $message").AddParameter("exc", exceptionRecord).AddParameter("message", message);
+                        poshCommand.Commands.AddScript("Param($exc, $message) Write-Error -Exception $exc -Message $message -ErrorAction Continue").AddParameter("exc", exceptionRecord).AddParameter("message", message);
                     }
                     else
                     {
-                        poshCommand.Commands.AddScript("Param($message) Write-Error -Message $message").AddParameter("message", message);
+                        poshCommand.Commands.AddScript("Param($message) Write-Error -Message $message -ErrorAction Continue").AddParameter("message", message);
                     }
                     poshCommand.Invoke();
                     return;
@@ -136,13 +153,12 @@ namespace EFPosh
 
         private PoshLogStream PoshLogLevel(LogLevel logLevel)
         {
-            if (_logConfig().LogLevelStreamMappings.ContainsKey(logLevel))
+            if (_logConfig.LogLevelStreamMappings.ContainsKey(logLevel))
             {
-                return _logConfig().LogLevelStreamMappings[logLevel];
+                return _logConfig.LogLevelStreamMappings[logLevel];
             }
             switch (logLevel)
             {
-                case LogLevel.Trace:
                 case LogLevel.Debug:
                     return PoshLogStream.Debug;
                 case LogLevel.Information:
@@ -153,9 +169,9 @@ namespace EFPosh
                 case LogLevel.Critical:
                     return PoshLogStream.Error;
                 case LogLevel.None:
-                    return PoshLogStream.Information;
+                case LogLevel.Trace:
                 default:
-                    return PoshLogStream.Information;
+                    return PoshLogStream.Verbose;
             }
         }
 
@@ -169,6 +185,7 @@ namespace EFPosh
             string message = $"{formatter(state, exception)}";
             WritePoshLog(message, poshLogLevel, exception);
         }
+        
     }
     internal class PoshLoggerOptionsSetup : ConfigureFromConfigurationOptions<PoshILoggerConfiguration>
     {

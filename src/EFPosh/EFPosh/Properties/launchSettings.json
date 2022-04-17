@@ -9,7 +9,7 @@
       "commandName": "Executable",
       "executablePath": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
       "commandLineArgs": "-NoExit -File C:\\Users\\Ryan2\\OneDrive\\Code\\EFPosh\\src\\KillNormalPosh.ps1",
-      "nativeDebugging": true
+      "nativeDebugging": false
     },
     "EFPoshWSL": {
       "commandName": "Executable",

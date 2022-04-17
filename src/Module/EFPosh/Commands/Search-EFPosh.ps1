@@ -82,6 +82,10 @@ Function Search-EFPosh{
         [Parameter(Mandatory=$false, ParameterSetName = 'ToList')]
         [Parameter(Mandatory=$false, ParameterSetName = 'FirstOrDefault')]
         [Parameter(Mandatory=$false, ParameterSetName = 'Any')]
+        [string[]]$ThenInclude,
+        [Parameter(Mandatory=$false, ParameterSetName = 'ToList')]
+        [Parameter(Mandatory=$false, ParameterSetName = 'FirstOrDefault')]
+        [Parameter(Mandatory=$false, ParameterSetName = 'Any')]
         [int]$Take,
         [Parameter(Mandatory=$false, ParameterSetName = 'ToList')]
         [Parameter(Mandatory=$false, ParameterSetName = 'FirstOrDefault')]
@@ -124,10 +128,16 @@ Function Search-EFPosh{
         $ToList = $true
     }
     if($Include){
+        $includeCount = 0
         foreach($instance in $Include){
-            if(-not ( [string]::IsNullOrEmpty($instance))){
-                $Entity.Include($instance)
+            $thenInstance = $null
+            if($ThenInclude){
+                $thenInstance = @($ThenInclude)[$includeCount]
             }
+            if(-not ( [string]::IsNullOrEmpty($instance))){
+                $Entity.Include($instance, $thenInstance)
+            }
+            $includeCount++
         }
     }
     if($AsNoTracking){
