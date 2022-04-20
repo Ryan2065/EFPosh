@@ -23,6 +23,19 @@ namespace BinaryExpressionConverter
         {
             var leftExpression = GetExpression(ast.Left);
             var rightExpression = GetExpression(ast.Right);
+
+            if(leftExpression.Type != rightExpression.Type && (leftExpression.ToString() != "null" && rightExpression.ToString() != "null"))
+            {
+                if (ast.Left.ToString().Contains("$_"))
+                {
+                    rightExpression = GetExpression(ast.Right, leftExpression.Type);
+                }
+                else if(ast.Right.ToString().Contains("$_"))
+                {
+                    leftExpression = GetExpression(ast.Left, rightExpression.Type);
+                }
+            }
+
             switch (ast.Operator)
             {
                 case TokenKind.Ieq:
@@ -80,13 +93,30 @@ namespace BinaryExpressionConverter
             }
             return newList;
         }
-        private object GetPoshValue(string script)
+        
+        private object EnsureType(object value, Type ensureType)
+        {
+            var poshConverterType = typeof(PoshConverter<>).MakeGenericType(new Type[] { ensureType });
+            object poshConverter = Activator.CreateInstance(poshConverterType);
+            var values = _sState.InvokeCommand.InvokeScript("param($value, $convertObj) return $convertObj.ConvertObject($value);", new[] { value, poshConverter });
+            if(values.Count == 1)
+            {
+                return values[0].BaseObject;
+            }
+            return value;
+        }
+        private object GetPoshValue(string script, Type ensureType = null)
         {
             var index = script.TrimStart('$').Trim();
             object value;
             if(int.TryParse(index, out int i))
             {
                 value = arguments[i];
+                if(value == null) { return value; }
+                else if(ensureType != null)
+                {
+                    return EnsureType(value, ensureType);
+                }
                 if (value.GetType().IsArray)
                 {
                     if (value.GetType().GetTypeInfo().GenericTypeArguments.Count() > 0)
@@ -96,6 +126,7 @@ namespace BinaryExpressionConverter
                     var arrayObject = value as Array;
                     foreach (var instance in arrayObject)
                     {
+                        if(instance == null) { return instance; }
                         var baseType = typeof(PoshBinaryConverter<T>);
                         var methDef = baseType.GetMethods().Where(p => p.Name == "MakeList").FirstOrDefault();
                         var ty = instance.GetType();
@@ -123,6 +154,14 @@ namespace BinaryExpressionConverter
             if (script.StartsWith("@("))
             {
                 value = returnObj.Value;
+                if(value == null)
+                {
+                    return value;
+                }
+                else if (ensureType != null)
+                {
+                    return EnsureType(value, ensureType);
+                }
                 if (value.GetType().IsArray)
                 {
                     if (value.GetType().GetTypeInfo().GenericTypeArguments.Count() > 0)
@@ -153,7 +192,7 @@ namespace BinaryExpressionConverter
 
             throw new Exception($"Could not expand {script} - Consider using -ArgumentList to pass arguments!");
         }
-        private Expression GetExpression(ExpressionAst expAst)
+        private Expression GetExpression(ExpressionAst expAst, Type ensureType = null)
         {
             Expression returnValue = null;
             switch (expAst)
@@ -165,7 +204,7 @@ namespace BinaryExpressionConverter
                     }
                     else
                     {
-                        returnValue = Expression.Constant(GetPoshValue(vexp.ToString()));
+                        returnValue = Expression.Constant(GetPoshValue(vexp.ToString(), ensureType));
                     }
                     break;
                 case MemberExpressionAst mexp:
@@ -180,9 +219,9 @@ namespace BinaryExpressionConverter
                             {
                                 var propertyInfo = ty.GetProperties().Where(p => p.Name.ToLower() == prop.ToLower()).FirstOrDefault();
                                 // This case is for $_."$Name" to expand $Name and get the property name
-                                if(propertyInfo == null && prop.Contains("$"))
+                                if (propertyInfo == null && prop.Contains("$"))
                                 {
-                                    var value = GetPoshValue(prop.TrimStart('"').TrimEnd('"'));
+                                    var value = GetPoshValue(prop.TrimStart('"').TrimEnd('"'), ensureType);
                                     propertyInfo = ty.GetProperties().Where(p => p.Name.ToLower() == value.ToString().ToLower()).FirstOrDefault();
                                 }
                                 ty = propertyInfo.PropertyType;
@@ -192,7 +231,7 @@ namespace BinaryExpressionConverter
                     }
                     else
                     {
-                        returnValue = Expression.Constant(GetPoshValue(mexp.ToString()));
+                        returnValue = Expression.Constant(GetPoshValue(mexp.ToString(), ensureType));
                     }
                     break;
                 case ParenExpressionAst pExp:
@@ -210,10 +249,10 @@ namespace BinaryExpressionConverter
                     returnValue = Expression.Constant(cexp.Value);
                     break;
                 case IndexExpressionAst iexp:
-                    returnValue = Expression.Constant(GetPoshValue(iexp.ToString()));
+                    returnValue = Expression.Constant(GetPoshValue(iexp.ToString(), ensureType));
                     break;
                 case ArrayExpressionAst aexp:
-                    returnValue = Expression.Constant(GetPoshValue(aexp.ToString()));
+                    returnValue = Expression.Constant(GetPoshValue(aexp.ToString(), ensureType));
                     break;
                 default:
                     throw new Exception("Could not convert AST because it's an unknown type");
@@ -231,5 +270,12 @@ namespace BinaryExpressionConverter
     {
         public object Value { get; set; }
         public bool IsArray { get; set; } = false;
+    }
+    public class PoshConverter<TItem>
+    {
+        public TItem ConvertObject(TItem obj)
+        {
+            return obj;
+        }
     }
 }

@@ -105,14 +105,14 @@ write-host 'order by test'
 #$Script:LatestDBContext.MyTest.OrderByDescending("test")
 #$Script:LatestDBContext.MyTest.ToList();
 
-Function MyTest([object]$DbContextEntity, [string[]]$SelectList){
-  $ConvertedExpression = ConvertTo-BinaryExpression -FuncType $DbContextEntity.GetBaseType() -Expression {$_.test -eq 'my test'} -Arguments @($Arguments)
+Function MyTest([object]$DbContextEntity, [string[]]$SelectList, [object[]]$Arguments){
+  $ConvertedExpression = ConvertTo-BinaryExpression -FuncType $DbContextEntity.GetBaseType() -Expression {$_.test -eq $0} -Arguments @($Arguments)
   $DbContextEntity.ApplyExpression($ConvertedExpression)
   $DbContextEntity.Select($SelectList);
   $DbContextEntity.ToList();
 }
-
-MyTest -DbContextEntity $Script:LatestDBContext.MyTest -SelectList 'test'
+$value = 'my test'
+MyTest -DbContextEntity $Script:LatestDBContext.MyTest -SelectList 'test' -Arguments @(,'a',$null)
 
 $Script:LatestDBContext.MyTest.Include("Tests")
 $mytestResults = $Script:LatestDBContext.MyTest.ToList()
