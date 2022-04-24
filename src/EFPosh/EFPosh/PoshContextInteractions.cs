@@ -12,11 +12,27 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 
 namespace EFPosh
 {
+    /// <summary>
+    /// Allows PowerShell to interact with the DbContext. Directly interacting with the DbContext will cause errors due to assemblies not being fully loaded
+    /// Calling through here will allow the assembly loaders to find missing assemblies on demand so DbContext interactions won't fail.
+    /// </summary>
     public class PoshContextInteractions : DynamicObject
     {
+        /// <summary>
+        /// Logger to log information to PowerShell using streams
+        /// </summary>
         private PoshILogger _logger;
+        /// <summary>
+        /// A list of entities marked as "FromSql", this means we don't directly query the Db, but instead sub in a sql script for the query
+        /// </summary>
         private Dictionary<string, string> FromSqlEntities;
+        /// <summary>
+        /// DbContext this class is interacting with
+        /// </summary>
         private DbContext _poshContext;
+        /// <summary>
+        /// Default constructor - Will set up PowerShell logging and the assembly loaders
+        /// </summary>
         public PoshContextInteractions()
         {
             _logger = new PoshILogger(LogLevel.Trace);
@@ -61,7 +77,6 @@ namespace EFPosh
                 config.LogLevelStreamMappings.Add(LogLevel.Information, PoshLogStream.Debug);
                 config.LogLevelStreamMappings.Add(LogLevel.None, PoshLogStream.Debug);
             }));
-
             var t = typeof(ServiceCollectionContainerBuilderExtensions).GetTypeInfo();
             var BuildServiceProviderMethod = t.GetMethod(nameof(BuildServiceProvider), new Type[] { typeof(IServiceCollection), typeof(bool) });
             return (IServiceProvider)BuildServiceProviderMethod.Invoke(null, new object[] { services, false });

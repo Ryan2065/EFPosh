@@ -2,6 +2,9 @@
 
 namespace EFPosh
 {
+    /// <summary>
+    /// Created in PowerShell - gets from the user the special rules to set on the entity, like if it's keyless or has multiple primary keys
+    /// </summary>
     public class PoshEntity
     {
         public Type Type { get; set; }

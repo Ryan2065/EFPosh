@@ -16,7 +16,7 @@ using System.Text.Json.Nodes;
 
 namespace EFPosh
 {
-    internal static class AssemblyResolvers
+    public static class AssemblyResolvers
     {
         public static List<string> dllPathsToCheck = new List<string>();
         private static void FindFoldersToCheckForDlls()

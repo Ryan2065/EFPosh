@@ -1,4 +1,11 @@
-if($PSVersionTable.PSVersion.Major -gt 5){
+if(-not [string]::IsNullOrEmpty($env:EFPoshDependencyFolder) -and 
+    ( Test-Path "$($env:EFPoshDependencyFolder)\EFPosh.dll" -ErrorAction SilentlyContinue ) -and 
+    ( Test-Path "$($env:EFPoshDependencyFolder)\BinaryExpressionConverter.dll" -ErrorAction SilentlyContinue ))
+{
+    $null = Add-Type -Path "$($env:EFPoshDependencyFolder)\EFPosh.dll"
+    Import-Module "$($env:EFPoshDependencyFolder)\BinaryExpressionConverter.dll" -Force
+}
+elseif($PSVersionTable.PSVersion.Major -gt 5){
     $null = Add-Type -Path "$PSScriptRoot\Dependencies\net6.0\EFPosh.dll"
     Import-Module "$PSScriptRoot\Dependencies\net6.0\BinaryExpressionConverter.dll" -Force
 }
@@ -7,6 +14,7 @@ else{
     $null = Add-Type -Path "$PSScriptRoot\Dependencies\net472\System.ComponentModel.Annotations.dll"
     Import-Module "$PSScriptRoot\Dependencies\net472\BinaryExpressionConverter.dll" -Force
 }
+
 
 $CommandFiles = Get-ChildItem -Path "$PSScriptRoot\Commands" -Filter '*.ps1'
 foreach($file in $CommandFiles){

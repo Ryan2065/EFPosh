@@ -2,6 +2,9 @@
 
 namespace EFPosh
 {
+    /// <summary>
+    /// Base DbContext that will add entities on the fly based on an array of types
+    /// </summary>
     public class PoshContext : DbContext
     {
         private PoshEntity[] _types;

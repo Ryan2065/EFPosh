@@ -5,19 +5,22 @@ using System.Management.Automation.Language;
 
 namespace BinaryExpressionConverter
 {
+    /// <summary>
+    /// Creates PowerShell cmdlet for converting a PowerShell BinaryExpressionAst object to a System.Linq BinaryExpression object
+    /// </summary>
     [Cmdlet(VerbsData.ConvertTo, "BinaryExpression")]
     public class ConvertToBinaryExpression : PSCmdlet
     {
         [Parameter(Mandatory =true,
-            Position =0)]
+            Position =0, HelpMessage = "Base linq type we are querying against. If a List<string>, this will be string")]
         public Type FuncType { get; set; }
         [Parameter(
             Position = 1,
-            Mandatory = true)]
+            Mandatory = true, HelpMessage = "Expression to convert. Expecting a BinaryExpressionAst.")]
         public ScriptBlock Expression { get; set; }
         [Parameter(
             Position = 2,
-            Mandatory = false)]
+            Mandatory = false, HelpMessage = "Any arguments needed for the Expression. Arguments will be in the expression in the form of $0 $1 $2, where 0, 1, and 2 are the index for the Argument array")]
         public object[] Arguments { get; set; }
 
         private IPoshBinaryConverter _binaryConverter;
