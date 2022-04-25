@@ -7,55 +7,27 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 
-namespace EFPosh
+namespace PoshILogger
 {
-    public class PoshILoggerConfiguration
-    {
-        public LogLevel Level { get; set; } = LogLevel.Information;
-        public Dictionary<LogLevel, PoshLogStream> LogLevelStreamMappings { get; set; } = new Dictionary<LogLevel, PoshLogStream>();
-    }
-    public class PoshILoggerProvider : ILoggerProvider
-    {
-        private PoshILoggerConfiguration _currentConfig;
-        private readonly IDisposable _onChangeToken;
-        private readonly ConcurrentDictionary<string, PoshILogger> _loggers = new ConcurrentDictionary<string, PoshILogger>();
-        public PoshILoggerProvider(IOptionsMonitor<PoshILoggerConfiguration> config)
-        {
-            _currentConfig = config.CurrentValue;
-            _onChangeToken = config.OnChange(updatedConfig => _currentConfig = updatedConfig);
-        }
-        public ILogger CreateLogger(string categoryName) 
-        {
-            if (string.IsNullOrEmpty(categoryName)) { categoryName = "Default"; }
-            return _loggers.GetOrAdd(categoryName, p => new PoshILogger(categoryName, GetCurrentConfig));
-        }
-        private PoshILoggerConfiguration GetCurrentConfig() => _currentConfig;
-
-        public void Dispose()
-        {
-            _loggers.Clear();
-            _onChangeToken.Dispose();
-        }
-    }
-    public class PoshILogger : ILogger
+    public class PoshLogger : ILogger
     {
         private readonly PoshILoggerConfiguration _logConfig;
         private readonly string _name;
         private System.Management.Automation.PowerShell _powerShell;
         private bool _enabled;
-        public PoshILogger(string name, Func<PoshILoggerConfiguration> config)
+        public PoshLogger(string name, Func<PoshILoggerConfiguration> config)
         {
             _name = name;
             _logConfig = config();
             InitialSetup();
         }
-        public PoshILogger()
+        public PoshLogger()
         {
             _logConfig = new PoshILoggerConfiguration();
             InitialSetup();
         }
 
-        public PoshILogger(LogLevel level)
+        public PoshLogger(LogLevel level)
         {
             _logConfig = new PoshILoggerConfiguration();
             _logConfig.Level = level;
@@ -83,7 +55,7 @@ namespace EFPosh
 
         public bool IsEnabled(LogLevel logLevel)
         {
-            if(_enabled == false) { return false; }
+            if (_enabled == false) { return false; }
             return logLevel >= _logConfig.Level;
         }
 
@@ -91,7 +63,7 @@ namespace EFPosh
         {
             try
             {
-                if(_powerShell == null)
+                if (_powerShell == null)
                 {
                     _powerShell = System.Management.Automation.PowerShell.Create(System.Management.Automation.RunspaceMode.CurrentRunspace);
                 }
@@ -107,10 +79,10 @@ namespace EFPosh
 
         private void WritePoshLog(string message, PoshLogStream logStream, Exception exceptionRecord = null)
         {
-            if(_enabled == false) { return; }
+            if (_enabled == false) { return; }
             var poshCommand = GetPowerShellObject();
-            if(poshCommand == null) { return; }
-            
+            if (poshCommand == null) { return; }
+
             switch (logStream)
             {
                 case PoshLogStream.Output:
@@ -118,7 +90,7 @@ namespace EFPosh
                     poshCommand.Invoke();
                     return;
                 case PoshLogStream.Error:
-                    if(exceptionRecord != null)
+                    if (exceptionRecord != null)
                     {
                         poshCommand.Commands.AddScript("Param($exc, $message) Write-Error -Exception $exc -Message $message -ErrorAction Continue").AddParameter("exc", exceptionRecord).AddParameter("message", message);
                     }
@@ -185,57 +157,6 @@ namespace EFPosh
             string message = $"{formatter(state, exception)}";
             WritePoshLog(message, poshLogLevel, exception);
         }
-        
-    }
-    internal class PoshLoggerOptionsSetup : ConfigureFromConfigurationOptions<PoshILoggerConfiguration>
-    {
-        public PoshLoggerOptionsSetup(ILoggerProviderConfiguration<PoshILoggerProvider>
-                                      providerConfiguration)
-            : base(providerConfiguration.Configuration)
-        {
-        }
-    }
-    public static class PoshILoggerExtensions
-    {
-        public static ILoggingBuilder AddPoshLogger(this ILoggingBuilder builder, PoshILoggerConfiguration config)
-        {
-            builder.AddConfiguration();
-            return builder;
-        }
-        public static ILoggingBuilder AddPoshLogger(
-            this ILoggingBuilder builder)
-        {
-            builder.AddConfiguration();
 
-            builder.Services.TryAddEnumerable(
-                ServiceDescriptor.Singleton<ILoggerProvider, PoshILoggerProvider>());
-            builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton
-           <IConfigureOptions<PoshILoggerConfiguration>, PoshLoggerOptionsSetup>());
-            builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton
-           <IOptionsChangeTokenSource<PoshILoggerConfiguration>,
-           LoggerProviderOptionsChangeTokenSource<PoshILoggerConfiguration, PoshILogger>>());
-
-            return builder;
-        }
-
-        public static ILoggingBuilder AddPoshLogger(
-            this ILoggingBuilder builder,
-            Action<PoshILoggerConfiguration> configure)
-        {
-            builder.AddPoshLogger();
-            builder.Services.Configure(configure);
-
-            return builder;
-        }
-    }
-    public enum PoshLogStream
-    {
-        Output,
-        Error,
-        Warning,
-        Verbose,
-        Debug,
-        Information,
-        Progress
     }
 }

@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿/*using Microsoft.EntityFrameworkCore;
 
 namespace EFPosh
 {
@@ -56,3 +56,5 @@ namespace EFPosh
         }
     }
 }
+
+*/

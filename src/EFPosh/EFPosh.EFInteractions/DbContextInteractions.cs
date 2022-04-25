@@ -9,6 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System.Runtime.InteropServices;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using PoshILogger;
 
 namespace EFPosh
 {
@@ -16,12 +17,12 @@ namespace EFPosh
     /// Allows PowerShell to interact with the DbContext. Directly interacting with the DbContext will cause errors due to assemblies not being fully loaded
     /// Calling through here will allow the assembly loaders to find missing assemblies on demand so DbContext interactions won't fail.
     /// </summary>
-    public class PoshContextInteractions : DynamicObject
+    public class DbContextInteractions : DynamicObject
     {
         /// <summary>
         /// Logger to log information to PowerShell using streams
         /// </summary>
-        private PoshILogger _logger;
+        private PoshLogger _logger;
         /// <summary>
         /// A list of entities marked as "FromSql", this means we don't directly query the Db, but instead sub in a sql script for the query
         /// </summary>
@@ -33,19 +34,20 @@ namespace EFPosh
         /// <summary>
         /// Default constructor - Will set up PowerShell logging and the assembly loaders
         /// </summary>
-        public PoshContextInteractions()
+        public DbContextInteractions()
         {
-            _logger = new PoshILogger(LogLevel.Trace);
+            _logger = new PoshLogger(LogLevel.Trace);
             AppDomain currentDomain = AppDomain.CurrentDomain;
             try
             {
 
-            currentDomain.AssemblyResolve += new ResolveEventHandler(AssemblyResolvers.PoshResolveEventHandler);
+                //currentDomain.AssemblyResolve += new ResolveEventHandler(AssemblyResolvers.PoshResolveEventHandler);
 #if NET6_0
-            NativeLibrary.SetDllImportResolver(typeof(SQLitePCL.SQLite3Provider_e_sqlite3).Assembly, AssemblyResolvers.NativeAssemblyResolver);
+                //NativeLibrary.SetDllImportResolver(typeof(SQLitePCL.SQLite3Provider_e_sqlite3).Assembly, AssemblyResolvers.NativeAssemblyResolver);
+                //NativeLibrary.SetDllImportResolver(typeof(Microsoft.Data.SqlClient.SqlConnection).Assembly, AssemblyResolvers.NativeAssemblyResolver);
 #endif
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _logger.LogDebug($"Could not load assembly resolver - Error {ex.Message}");
             }
@@ -62,14 +64,14 @@ namespace EFPosh
                                                                             });
                                                                           });
 #endif
-        public void SetDependencyFolder(string dependencyFolder)
+        /*public void SetDependencyFolder(string dependencyFolder)
         {
-            if(!AssemblyResolvers.dllPathsToCheck.Any(p => p == dependencyFolder))
+            if (!AssemblyResolvers.dllPathsToCheck.Any(p => p == dependencyFolder))
             {
                 AssemblyResolvers.dllPathsToCheck.Add(dependencyFolder);
             }
-        }
-        
+        }*/
+
         static IServiceProvider BuildServiceProvider(IServiceCollection services)
         {
             services.AddLogging(p => p.SetMinimumLevel(LogLevel.Warning).AddFilter("Microsoft.EntityFrameworkCore.Database.Command", LogLevel.Trace).AddPoshLogger(config =>
@@ -81,7 +83,7 @@ namespace EFPosh
             var BuildServiceProviderMethod = t.GetMethod(nameof(BuildServiceProvider), new Type[] { typeof(IServiceCollection), typeof(bool) });
             return (IServiceProvider)BuildServiceProviderMethod.Invoke(null, new object[] { services, false });
         }
-        
+
         public void NewDbContext<T>(
             string connectionString,
             string dbType,
@@ -94,7 +96,7 @@ namespace EFPosh
         {
             var dbOptions = new DbContextOptionsBuilder<T>();
             IServiceCollection coll = new ServiceCollection();
-            
+
             switch (dbType.ToUpper())
             {
                 case "SQLITE":
@@ -107,16 +109,16 @@ namespace EFPosh
                     coll = coll.AddEntityFrameworkSqlServer();
                     break;
             }
-#if NET6_0_OR_GREATER
-            dbOptions.UseLoggerFactory(PoshLoggerFactory);
-#else
+#if NETSTANDARD2_0
             var sp = BuildServiceProvider(coll);
             dbOptions.UseInternalServiceProvider(sp);
+#else
+            dbOptions.UseLoggerFactory(PoshLoggerFactory);
 #endif
 
 
             DbContext dbContext = null;
-            if(typeof(T) == typeof(PoshContext))
+            if (typeof(T) == typeof(PoshContext))
             {
                 dbContext = new PoshContext(dbOptions.Options, Types);
             }
@@ -140,7 +142,7 @@ namespace EFPosh
                 dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
             }
             _poshContext = dbContext;
-            if(Types == null) { return; }
+            if (Types == null) { return; }
             foreach (var t in Types)
             {
                 if (!String.IsNullOrEmpty(t.FromSql))
@@ -163,7 +165,7 @@ namespace EFPosh
             var assembly = Assembly.LoadFile(dllPath);
             var type = assembly.GetTypes().Where(p => p.Name.ToLower().Equals(ContextClassName.ToLower())).FirstOrDefault();
             PoshEntity[] Types = null;
-            typeof(PoshContextInteractions)
+            typeof(DbContextInteractions)
                     .GetMethod("NewDbContext")
                     .MakeGenericMethod(type)
                     .Invoke(this, new object[] { connectionString, dbType, EnsureCreated, RunMigrations, ReadOnly, Types });
@@ -179,24 +181,24 @@ namespace EFPosh
         {
             NewDbContext<PoshContext>(connectionString, dbType, EnsureCreated, RunMigrations, ReadOnly, Types);
         }
-        
+
         public DbContext DBContext
         {
             get { return _poshContext; }
             set { _poshContext = value; }
         }
 
-        public PoshEntityColumn<T> NewQuery<T>()
+        public EntityInteractions<T> NewQuery<T>()
             where T : class
         {
-            var returnObject = new PoshEntityColumn<T>(_poshContext);
+            var returnObject = new EntityInteractions<T>(_poshContext);
             if (FromSqlEntities.ContainsKey(typeof(T).Name))
             {
                 returnObject.FromSql(FromSqlEntities[typeof(T).Name]);
             }
             return returnObject;
         }
-        
+
         private object ConvertType(object obj)
         {
             var objectType = obj.GetType();
@@ -209,7 +211,7 @@ namespace EFPosh
                     newType = et.ClrType;
                 }
             }
-            if(newType != null)
+            if (newType != null)
             {
                 var newObj = Activator.CreateInstance(newType);
                 foreach (var property in newType.GetProperties())
@@ -220,7 +222,7 @@ namespace EFPosh
             }
             return obj;
         }
-                
+
         public void Add(object obj)
         {
             try
@@ -239,10 +241,10 @@ namespace EFPosh
             {
                 _poshContext.AddRange(objs);
             }
-            catch(InvalidCastException)
+            catch (InvalidCastException)
             {
                 List<object> NewObjectList = new List<object>();
-                foreach(var instance in objs)
+                foreach (var instance in objs)
                 {
                     NewObjectList.Add(ConvertType(instance));
                 }
@@ -291,7 +293,7 @@ namespace EFPosh
         {
             if (!CachedEntities.ContainsKey(binder.Name.ToUpper()))
             {
-                
+
                 var typeList = _poshContext.Model
                                 .GetEntityTypes()
                                 .Select(p => p.ClrType)
@@ -300,7 +302,7 @@ namespace EFPosh
                 result = null;
                 if (requestedType != null)
                 {
-                    CachedEntities[binder.Name.ToUpper()] = typeof(PoshContextInteractions)
+                    CachedEntities[binder.Name.ToUpper()] = typeof(DbContextInteractions)
                         .GetMethod("NewQuery")
                         .MakeGenericMethod(requestedType)
                         .Invoke(this, null);
@@ -329,5 +331,5 @@ namespace EFPosh
             }
         }
     }
-    
+
 }

@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿/*using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,11 +16,12 @@ using System.Text.Json.Nodes;
 
 namespace EFPosh
 {
-    public static class AssemblyResolvers
+    /*public static class AssemblyResolvers
     {
         public static List<string> dllPathsToCheck = new List<string>();
         private static void FindFoldersToCheckForDlls()
         {
+            
             var assemblyFolder = Path.GetDirectoryName(typeof(PoshContextInteractions).Assembly.Location);
             if (string.IsNullOrEmpty(assemblyFolder)) { return; }
             if (!dllPathsToCheck.Contains(assemblyFolder))
@@ -31,6 +32,7 @@ namespace EFPosh
 #if NET6_0
         internal static IntPtr NativeAssemblyResolver(string libraryName, Assembly assembly, DllImportSearchPath? searchPath)
         {
+            Console.WriteLine(libraryName);
             if (!libraryName.Equals("e_sqlite3", StringComparison.OrdinalIgnoreCase))
                 return IntPtr.Zero;
             FindFoldersToCheckForDlls();
@@ -67,6 +69,7 @@ namespace EFPosh
         internal static Assembly PoshResolveEventHandler(object sender, ResolveEventArgs args)
         {
             FindFoldersToCheckForDlls();
+            Console.WriteLine($"{args.Name}");
             var dllNeeded = args.Name.Split(',')[0] + ".dll";
             foreach (var directoryInfo in dllPathsToCheck)
             {
@@ -80,3 +83,4 @@ namespace EFPosh
         }
     }
 }
+*/

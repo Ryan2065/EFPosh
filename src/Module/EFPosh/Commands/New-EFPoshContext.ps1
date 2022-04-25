@@ -1,3 +1,4 @@
+<#
 Function New-EFPoshContext{
     <#
     .SYNOPSIS
@@ -45,7 +46,7 @@ Function New-EFPoshContext{
     
     .NOTES
     .Author: Ryan Ephgrave
-    #>
+    
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory=$true, ParameterSetName = "ConnectionString")]
@@ -96,7 +97,13 @@ Function New-EFPoshContext{
     }
     $Script:LatestDBContext = $null
     $Script:LatestDBContext = [EFPosh.PoshContextInteractions]::new()
-    if($PSVersionTable.PSVersion.Major -gt 5){
+    if(-not [string]::IsNullOrEmpty($env:EFPoshDependencyFolder) -and 
+    ( Test-Path "$($env:EFPoshDependencyFolder)\EFPosh.dll" -ErrorAction SilentlyContinue ) -and 
+    ( Test-Path "$($env:EFPoshDependencyFolder)\BinaryExpressionConverter.dll" -ErrorAction SilentlyContinue ))
+    {
+        $Script:LatestDBContext.SetDependencyFolder($env:EFPoshDependencyFolder)
+    }
+    elseif($PSVersionTable.PSVersion.Major -gt 5){
         $Script:LatestDBContext.SetDependencyFolder("$PSScriptRoot\Dependencies\net6.0")
     }
     else{
@@ -112,7 +119,7 @@ Function New-EFPoshContext{
     }
     elseif($PSCmdlet.ParameterSetName -eq 'MSSQL'){
         $DBType = 'MSSQL'
-        $ConnectionString = "Server=$($MSSQLServer);Database=$($MSSQLDatabase);Integrated Security=$($MSSQLIntegratedSecurity)"
+        $ConnectionString = "Data Source=$($MSSQLServer);Initial Catalog=$($MSSQLDatabase);Integrated Security=$($MSSQLIntegratedSecurity)"
     }
     if([string]::IsNullOrEmpty($AssemblyFile)){
         $null = $Script:LatestDBContext.NewPoshContext($ConnectionString, $DBType, $Entities, $boolEnsureCreated, $RunMigrations.IsPresent, $boolReadOnly)
@@ -121,4 +128,4 @@ Function New-EFPoshContext{
         $null = $Script:LatestDBContext.ExistingContext($ConnectionString, $DBType, $boolEnsureCreated, $RunMigrations.IsPresent ,$boolReadOnly, $AssemblyFile, $ClassName)
     }
     return $Script:LatestDBContext
-}
+}#>
