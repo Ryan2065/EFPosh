@@ -1,23 +1,26 @@
 if(-not [string]::IsNullOrEmpty($env:EFPoshDependencyFolder) -and 
-    ( Test-Path "$($env:EFPoshDependencyFolder)\EFPosh.dll" -ErrorAction SilentlyContinue ) -and 
-    ( Test-Path "$($env:EFPoshDependencyFolder)\BinaryExpressionConverter.dll" -ErrorAction SilentlyContinue ))
+    ( Test-Path "$($env:EFPoshDependencyFolder)\EFPosh.dll" -ErrorAction SilentlyContinue ))
 {
-    $DependencyFolder = $env:EFPoshDependencyFolder
-    $null = Add-Type -Path "$($env:EFPoshDependencyFolder)\EFPosh.dll"
-    Import-Module "$($env:EFPoshDependencyFolder)\BinaryExpressionConverter.dll" -Force
-    if($PSVersionTable.PSVersion.Major -le 5){
-        $null = Add-Type -Path "$($env:EFPoshDependencyFolder)\System.ComponentModel.Annotations.dll"
-    }
+    Import-Module "$PSScriptRoot\Dependencies\EFPosh\net6.0\EFPosh.dll" -Force
+    $assembly = [System.Reflection.Assembly]::Load("EFPosh.Shared")
+    Add-Type -Path $assembly.Location
+    $assembly = [System.Reflection.Assembly]::Load("EFPosh.EFInteractions")
+    Add-Type -Path $assembly.Location
 }
 elseif($PSVersionTable.PSVersion.Major -gt 5){
-    $DependencyFolder = "$PSScriptRoot\Dependencies\net6.0"
+    Import-Module "$PSScriptRoot\Dependencies\EFPosh\net6.0\EFPosh.dll" -Force
+    $assembly = [System.Reflection.Assembly]::Load("EFPosh.Shared")
+    Add-Type -Path $assembly.Location
 }
 else{
-    $DependencyFolder = "$PSScriptRoot\Dependencies\net472"
+    Import-Module "$PSScriptRoot\Dependencies\EFPosh\netstandard2.0\EFPosh.dll" -Force
+    $null = Add-Type -Path "$PSScriptRoot\Dependencies\EFPosh\netstandard2.0\EFPosh.Shared.dll"
 }
 
-Import-Module "$DependencyFolder\BinaryExpressionConverter.dll" -Force
 
+
+
+<#
 if($PSVersionTable.PSVersion.Major -gt 5){
     write-host "loading resolver"
     write-host "dep folder: $($DependencyFolder)"
@@ -30,7 +33,7 @@ if($PSVersionTable.PSVersion.Major -gt 5){
 else{
     $null = Add-Type -Path "$DependencyFolder\EFPosh.dll"
     $null = Add-Type -Path "$DependencyFolder\System.ComponentModel.Annotations.dll"
-}
+}#>
 
 $CommandFiles = Get-ChildItem -Path "$PSScriptRoot\Commands" -Filter '*.ps1'
 foreach($file in $CommandFiles){
@@ -42,4 +45,4 @@ foreach($file in $PrivateCommandFiles){
     . $file.FullName
 }
 
-Export-ModuleMember -Function $CommandFiles.BaseName -Cmdlet 'ConvertTo-BinaryExpression'
+Export-ModuleMember -Function $CommandFiles.BaseName -Cmdlet 'ConvertTo-BinaryExpression','New-EFPoshContext'

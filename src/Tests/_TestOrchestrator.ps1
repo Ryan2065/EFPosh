@@ -1,5 +1,5 @@
 #File should be able to be called from Posh 5 or Posh 7
-
+. C:\Users\Ryan2\OneDrive\Code\EFPosh\build.ps1
 Import-Module Pester -MinimumVersion 5.3 -Verbose:$false
 
 $ErrorActionPreference = 'Stop'

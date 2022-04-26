@@ -9,6 +9,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EFPosh.EFInteractions", "EF
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PoshILogger", "PoshILogger\PoshILogger.csproj", "{472E9469-614B-41F4-9786-5014185E5E89}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EFPosh.Shared", "EFPosh.Shared\EFPosh.Shared.csproj", "{CADB2BA6-96D7-4682-A28D-1471B6586C6F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,10 @@ Global
 		{472E9469-614B-41F4-9786-5014185E5E89}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{472E9469-614B-41F4-9786-5014185E5E89}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{472E9469-614B-41F4-9786-5014185E5E89}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CADB2BA6-96D7-4682-A28D-1471B6586C6F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CADB2BA6-96D7-4682-A28D-1471B6586C6F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CADB2BA6-96D7-4682-A28D-1471B6586C6F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CADB2BA6-96D7-4682-A28D-1471B6586C6F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

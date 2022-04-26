@@ -44,8 +44,31 @@ $Tables = @(
     ( New-EFPoshEntityDefinition -Type 'TestTableTwo' )
     #( New-EFPoshEntityDefinition -Type 'TestTableThree' )
 )
+<#
+function Invoke-SQL {
+    param(
+        [string] $dataSource,
+        [string] $database,
+        [string] $sqlCommand = $(throw "Please specify a query.")
+      )
 
-$SqlCmd = New-Object System.Data.SqlClient.SqlCommand
+    $connectionString = "Data Source=$dataSource; " +
+            "Integrated Security=SSPI; " +
+            "Initial Catalog=$database"
+
+    $connection = new-object system.data.SqlClient.SQLConnection($connectionString)
+    $command = new-object system.data.sqlclient.sqlcommand($sqlCommand,$connection)
+    $connection.Open()
+
+    $adapter = New-Object System.Data.sqlclient.sqlDataAdapter $command
+    $dataset = New-Object System.Data.DataSet
+    $adapter.Fill($dataSet) | Out-Null
+
+    $connection.Close()
+    $dataSet.Tables
+
+}
+
 $Sql = @'
 Use {0};
 
@@ -55,18 +78,15 @@ Use master;
 
 DROP DATABASE {0};
 '@ -f "EFPoshTest$($PSVersionTable.PSEdition)"
+
+
 try{
-    $SqlCmd.CommandText = $sql
-    $sqlConnection = New-Object System.Data.SqlClient.SqlConnection "Server=Lab-CM.Home.Lab;Integrated Security=True;"
-    $null = $sqlConnection.Open()
-    $SqlCmd.Connection = $sqlConnection
-    $Reader= $SqlCmd.ExecuteReader()
-    $null = $SqlConnection.Close()
+    Invoke-SQL -dataSource 'Lab-CM.Home.Lab' -database "EFPoshTest$($PSVersionTable.PSEdition)" -sqlCommand $sql
+
 }
 catch {}
-
+#>
 $DbName = "EFPoshTest$($PSVersionTable.PSEdition)"
-WRite-host $DbName
 
 New-EFPoshContext -MSSQLServer 'Lab-CM.Home.Lab' -MSSQLDatabase "EFPoshTest$($PSVersionTable.PSEdition)" -MSSQLIntegratedSecurity $true -Entities $Tables -EnsureCreated
 

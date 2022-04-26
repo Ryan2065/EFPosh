@@ -3,8 +3,6 @@
 	<PropertyGroup>
 		<TargetFrameworks>netstandard2.0;net6.0</TargetFrameworks>
 		<ProduceReferenceAssembly>false</ProduceReferenceAssembly>
-		<AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
-		<GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
 		<IsPackageable>false</IsPackageable>
 		<RestoreProjectStyle>PackageReference</RestoreProjectStyle>
 		<CopyLocalLockFileAssemblies Condition="'$(Configuration)'=='Debug'">true</CopyLocalLockFileAssemblies>

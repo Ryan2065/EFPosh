@@ -10,6 +10,7 @@ using Microsoft.Extensions.Logging;
 using System.Runtime.InteropServices;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using PoshILogger;
+using EFPosh.Shared;
 
 namespace EFPosh
 {
@@ -17,7 +18,7 @@ namespace EFPosh
     /// Allows PowerShell to interact with the DbContext. Directly interacting with the DbContext will cause errors due to assemblies not being fully loaded
     /// Calling through here will allow the assembly loaders to find missing assemblies on demand so DbContext interactions won't fail.
     /// </summary>
-    public class DbContextInteractions : DynamicObject
+    public class DbContextInteractions : DynamicObject, IDBContextInteractions
     {
         /// <summary>
         /// Logger to log information to PowerShell using streams
@@ -64,7 +65,7 @@ namespace EFPosh
                                                                             });
                                                                           });
 #endif
-        /*public void SetDependencyFolder(string dependencyFolder)
+        /*public void SetDependencyFolder(string dependencyFolder) 
         {
             if (!AssemblyResolvers.dllPathsToCheck.Any(p => p == dependencyFolder))
             {
@@ -84,7 +85,7 @@ namespace EFPosh
             return (IServiceProvider)BuildServiceProviderMethod.Invoke(null, new object[] { services, false });
         }
 
-        public void NewDbContext<T>(
+        private void NewDbContext<T>(
             string connectionString,
             string dbType,
             bool EnsureCreated,
@@ -94,6 +95,7 @@ namespace EFPosh
         )
             where T : DbContext
         {
+            
             var dbOptions = new DbContextOptionsBuilder<T>();
             IServiceCollection coll = new ServiceCollection();
 

@@ -9,7 +9,7 @@
 @{
 
 # Script module or binary module file associated with this manifest.
-RootModule = '.\Dependencies\Module\EFPosh.dll'
+RootModule = '.\EFPosh.psm1'
 
 # Version number of this module.
 ModuleVersion = '2.0.1'
