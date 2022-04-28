@@ -6,20 +6,21 @@ using Microsoft.EntityFrameworkCore.Internal;
 using System.Linq.Expressions;
 using Microsoft.Extensions.Logging;
 using System.Reflection;
+using System.Management.Automation;
 
 namespace EFPosh
 {
-    public class PoshEntityColumn<T>
+    public class PoshEntityInteractions<T>
         where T : class
     {
-        private IQueryable<T> _baseIQueryable;
+        private readonly IQueryable<T> _baseIQueryable;
         private IQueryable<T> _modifiedIQueryable;
-        private ParameterExpression _p;
-        private List<string> SelectProperties;
+        private readonly List<string> SelectProperties;
+#if !NETFRAMEWORK
         private readonly DbContext _dbContext;
-        public PoshEntityColumn(DbContext dbContext)
+#endif
+        public PoshEntityInteractions(DbContext dbContext)
         {
-
             var ets = dbContext.Model.GetEntityTypes();
             foreach (var et in ets)
             {
@@ -36,13 +37,13 @@ namespace EFPosh
                     }
 #else
                     _baseIQueryable = dbContext.Set<T>().AsQueryable();
+                    _dbContext = dbContext;
 #endif
                 }
             }
             _modifiedIQueryable = _baseIQueryable;
-            _p = Expression.Parameter(typeof(T), "p");
             SelectProperties = new List<string>();
-            _dbContext = dbContext;
+            
         }
 
         public T New()
@@ -54,7 +55,7 @@ namespace EFPosh
         {
             var xParameter = Expression.Parameter(typeof(T), "o");
             var xNew = Expression.New(typeof(T));
-            List<MemberAssignment> assignments = new List<MemberAssignment>();
+            List<MemberAssignment> assignments = new();
             foreach (var prop in SelectProperties)
             {
                 var mi = typeof(T).GetProperties()
@@ -128,7 +129,7 @@ namespace EFPosh
             {
                 var methodInfo = this.GetType().GetMethod("ThenIncludeInternal", BindingFlags.NonPublic | BindingFlags.Instance);
                 var propType = propertyInfo.PropertyType;
-                if (propType.GetGenericArguments().Count() == 1)
+                if (propType.GetGenericArguments().Length == 1)
                 {
                     propType = propertyInfo.PropertyType.GetGenericArguments()[0];
                 }
@@ -145,7 +146,7 @@ namespace EFPosh
 
         internal void ThenIncludeInternal<TKey, TKeyNotEnumerable, TSecondKey>(string propertyName, string thenIncludeProperty)
         {
-            if (typeof(TKey).GetGenericArguments().Count() == 1)
+            if (typeof(TKey).GetGenericArguments().Length == 1)
             {
                 _modifiedIQueryable = _modifiedIQueryable.Include(GetSinglePropertyExpression<T, IEnumerable<TKeyNotEnumerable>>(propertyName)).ThenInclude(GetSinglePropertyExpression<TKeyNotEnumerable, TSecondKey>(thenIncludeProperty));
             }
@@ -178,7 +179,7 @@ namespace EFPosh
             }
         }
 
-        internal Expression<Func<TKey, TKey2>> GetSinglePropertyExpression<TKey, TKey2>(string propertyName)
+        internal static Expression<Func<TKey, TKey2>> GetSinglePropertyExpression<TKey, TKey2>(string propertyName)
         {
             var newParam = Expression.Parameter(typeof(TKey), "newP");
             var body = Expression.Property(newParam, propertyName);
@@ -223,9 +224,11 @@ namespace EFPosh
             return _baseIQueryable;
         }
 
-        public void ApplyExpression(Expression<Func<T, bool>> exp)
+        public void ApplyExpression(ScriptBlock script, SessionState sState, object[] Arguments = null)
         {
-            _modifiedIQueryable = _modifiedIQueryable.Where(exp);
+            var binaryConverter = new PoshBinaryConverter<T>(sState);
+            var expressionToApply = binaryConverter.ConvertBinaryExpression(script, Arguments);
+            _modifiedIQueryable = _modifiedIQueryable.Where(expressionToApply);
         }
 
         public void Reset()

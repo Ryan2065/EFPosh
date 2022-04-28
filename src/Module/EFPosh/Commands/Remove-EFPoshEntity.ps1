@@ -1,23 +1,23 @@
-Function Add-EFPoshEntity{
+Function Remove-EFPoshEntity{
     <#
     .SYNOPSIS
-    Adds an entity to a database
+    Removes an entity from a database
     
     .DESCRIPTION
-    Will add an entity to a database and queue it for inserting. Use -SaveChanges switch to commit change immediately
+    Will remove an entity from a database and queue it for removal. Use -SaveChanges switch to commit change immediately
     
     .PARAMETER DbContext
-    Optional - DbContext you want to add the entity to. Will use last created one if not provided
+    Optional - DbContext you want to remove the entity from. Will use last created one if not provided
     
     .PARAMETER Entity
-    Created entity(s) we want to add to the database
+    Existing entity we want to remove from the database
     
     .PARAMETER SaveChanges
     Used if we want the changes to be commited immediately. If not called - Save-EFPoshChanges will need to be called manually to save the changes.
     Can also save changes using $DbContext.SaveChanges();
     
     .EXAMPLE
-    Add-EFPoshEntity -DbContext $MyDbContext -Entity $MyEntity
+    Remove-EFPoshEntity -DbContext $MyDbContext -Entity $MyEntity
     Save-EFPoshChanges
     
     .NOTES
@@ -28,7 +28,7 @@ Function Add-EFPoshEntity{
         [Parameter(Mandatory=$false)]
         [object]$DbContext,
         [Parameter(Mandatory=$true)]
-        [object[]]$Entity,
+        [object]$Entity,
         [switch]$SaveChanges
     )
     if(-not $PSBoundParameters.ContainsKey('DbContext')){
@@ -39,10 +39,10 @@ Function Add-EFPoshEntity{
         return
     }
     if($Entity.Count -gt 1){
-        $DbContext.AddRange($Entity)
+        $DbContext.RemoveRange($Entity)
     }
     else{
-        $DbContext.Add($Entity[0])
+        $DbContext.Remove($Entity[0])
     }
     if($SaveChanges){
         Save-EFPoshChanges -DbContext $DbContext

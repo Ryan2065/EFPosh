@@ -7,16 +7,16 @@ using System.Management.Automation;
 using System.Management.Automation.Language;
 using System.Reflection;
 
-namespace BinaryExpressionConverter
+namespace EFPosh
 {
     /// <summary>
     /// Class to handle converting a PowerShell binary expression to Linq binary expression
     /// </summary>
     /// <typeparam name="T">Type of the collection we are searching</typeparam>
-    public class PoshBinaryConverter<T> : IPoshBinaryConverter
+    public class PoshBinaryConverter<T>
     {
-        private ParameterExpression _p;
-        private SessionState _sState;
+        private readonly ParameterExpression _p;
+        private readonly SessionState _sState;
         private object[] arguments;
         /// <summary>
         /// Constructor
@@ -33,11 +33,24 @@ namespace BinaryExpressionConverter
         /// <param name="binaryExpression">Expression from user</param>
         /// <param name="Arguments">Parameters from user</param>
         /// <returns>Converted lambda expression - Listed as object because type isn't exactly known and posh gets it as an object anyway</returns>
-        public object ConvertBinaryExpression(BinaryExpressionAst binaryExpression, object[] Arguments)
+        public Expression<Func<T, bool>> ConvertBinaryExpression(ScriptBlock sb, object[] Arguments)
         {
+            var binaryExpression = sb.Ast.FindAll(p => p.GetType().Name.Equals("BinaryExpressionAst"), true).FirstOrDefault();
             arguments = Arguments;
-            var bExp = BuildExpression(binaryExpression);
-            return Expression.Lambda<Func<T, bool>>(bExp, _p);
+            Expression finalExpression = null;
+            if (binaryExpression != null)
+            {
+                finalExpression = BuildExpression((BinaryExpressionAst)binaryExpression);
+            }
+            else
+            {
+                var invokeExpression = sb.Ast.FindAll(p => p.GetType().Name.Equals("InvokeMemberExpressionAst"), true).FirstOrDefault();
+                if(invokeExpression != null)
+                {
+                    finalExpression = BuildExpression((InvokeMemberExpressionAst)invokeExpression);
+                }
+            }
+            return Expression.Lambda<Func<T, bool>>(finalExpression, _p);
         }
         /// <summary>
         /// Main control to get the Left and Right of the expression and then add in the operator.
@@ -76,11 +89,11 @@ namespace BinaryExpressionConverter
                     return Expression.Or(leftExpression, rightExpression);
                 case TokenKind.Ccontains:
                 case TokenKind.Icontains:
-                    var method = leftExpression.Type.GetMethods().Where(p => p.Name == "Contains" && p.GetParameters().Count() == 1).FirstOrDefault();
+                    var method = leftExpression.Type.GetMethods().Where(p => p.Name == "Contains" && p.GetParameters().Length == 1).FirstOrDefault();
                     return Expression.Call(leftExpression, method, rightExpression);
                 case TokenKind.Cnotcontains:
                 case TokenKind.Inotcontains:
-                    var notContainsmethod = leftExpression.Type.GetMethods().Where(p => p.Name == "Contains" && p.GetParameters().Count() == 1).FirstOrDefault();
+                    var notContainsmethod = leftExpression.Type.GetMethods().Where(p => p.Name == "Contains" && p.GetParameters().Length == 1).FirstOrDefault();
                     return Expression.Not(Expression.Call(leftExpression, notContainsmethod, rightExpression));
                 case TokenKind.Ige:
                 case TokenKind.Cge:
@@ -101,6 +114,10 @@ namespace BinaryExpressionConverter
                     throw new Exception("Could not build a Linq query from supplied expression");
             }
         }
+        private Expression BuildExpression(InvokeMemberExpressionAst ast)
+        {
+            return GetExpression(ast);
+        }
         /// <summary>
         /// Converts a PowerShell expression to a Linq Expression
         /// </summary>
@@ -120,7 +137,40 @@ namespace BinaryExpressionConverter
                     }
                     else
                     {
-                        returnValue = Expression.Constant(GetPoshValue(vexp.ToString(), ensureType));
+                        returnValue = Expression.Constant(GetPoshValue(vexp, ensureType));
+                    }
+                    break;
+                case InvokeMemberExpressionAst imexp:
+                    List<Expression> arguments = new();
+                    foreach(var arg in imexp.Arguments)
+                    {
+                        arguments.Add(GetExpression(arg));
+                    }
+                    var baseExp = GetExpression(imexp.Expression);
+                    var imexValue = imexp.Member.SafeGetValue().ToString();
+                    var methods = baseExp.Type.GetMethods().Where(p => p.Name == imexValue).ToList();
+                    List<MethodInfo> acceptableMethods = new();
+                    // trying to find an acceptable method - find methods that can accept the number of argumets we have
+                    // Then looks to make sure the types are correct
+                    foreach(var method in methods)
+                    {
+                        var methodParameters = method.GetParameters();
+                        if(methodParameters.Length >= arguments.Count)
+                        {
+                            bool isAcceptable = true;
+                            for (int i = 0; i < arguments.Count; i++)
+                            {
+                                if (methodParameters[i].ParameterType != arguments[i].Type)
+                                {
+                                    isAcceptable = false;
+                                }
+                            }
+                            if (isAcceptable)
+                            {
+                                returnValue = Expression.Call(baseExp, method, arguments);
+                                break;
+                            }
+                        }
                     }
                     break;
                 case MemberExpressionAst mexp:
@@ -135,9 +185,9 @@ namespace BinaryExpressionConverter
                             {
                                 var propertyInfo = ty.GetProperties().Where(p => p.Name.ToLower() == prop.ToLower()).FirstOrDefault();
                                 // This case is for $_."$Name" to expand $Name and get the property name
-                                if (propertyInfo == null && prop.Contains("$"))
+                                if (propertyInfo == null && prop.Contains('$'))
                                 {
-                                    var value = GetPoshValue(prop.TrimStart('"').TrimEnd('"'), ensureType);
+                                    var value = GetPoshValue(ScriptBlock.Create(prop).Ast, ensureType);
                                     propertyInfo = ty.GetProperties().Where(p => p.Name.ToLower() == value.ToString().ToLower()).FirstOrDefault();
                                 }
                                 ty = propertyInfo.PropertyType;
@@ -147,14 +197,13 @@ namespace BinaryExpressionConverter
                     }
                     else
                     {
-                        returnValue = Expression.Constant(GetPoshValue(mexp.ToString(), ensureType));
+                        returnValue = Expression.Constant(GetPoshValue(mexp, ensureType));
                     }
                     break;
                 case ParenExpressionAst pExp:
                     PipelineAst pipeAst = (PipelineAst)pExp.Pipeline;
-                    if (pipeAst.PipelineElements[0] is CommandExpressionAst)
+                    if (pipeAst.PipelineElements[0] is CommandExpressionAst cExp)
                     {
-                        var cExp = (CommandExpressionAst)pipeAst.PipelineElements[0];
                         returnValue = GetExpression(cExp.Expression);
                     }
                     break;
@@ -165,10 +214,10 @@ namespace BinaryExpressionConverter
                     returnValue = Expression.Constant(cexp.Value);
                     break;
                 case IndexExpressionAst iexp:
-                    returnValue = Expression.Constant(GetPoshValue(iexp.ToString(), ensureType));
+                    returnValue = Expression.Constant(GetPoshValue(iexp, ensureType));
                     break;
                 case ArrayExpressionAst aexp:
-                    returnValue = Expression.Constant(GetPoshValue(aexp.ToString(), ensureType));
+                    returnValue = Expression.Constant(GetPoshValue(aexp, ensureType));
                     break;
                 default:
                     throw new Exception("Could not convert AST because it's an unknown type");
@@ -183,8 +232,15 @@ namespace BinaryExpressionConverter
         /// <param name="ensureType">EnsureType will be used if the wrong type was gotten once, and it needs to rerun to get the correct type</param>
         /// <returns>Hopefully an object of the correct type</returns>
         /// <exception cref="Exception">If the value cannot be found</exception>
-        private object GetPoshValue(string script, Type ensureType = null)
+        private object GetPoshValue(Ast expAst, Type ensureType = null)
         {
+            try
+            {
+                var obj = expAst.SafeGetValue();
+                return EnsureType(obj, ensureType);
+            }
+            catch { }
+            var script = expAst.ToString().TrimStart('"').TrimEnd('"');
             var index = script.TrimStart('$').Trim();
             object value;
             if (int.TryParse(index, out int i))
@@ -197,7 +253,7 @@ namespace BinaryExpressionConverter
                 }
                 if (value.GetType().IsArray)
                 {
-                    if (value.GetType().GetTypeInfo().GenericTypeArguments.Count() > 0)
+                    if (value.GetType().GetTypeInfo().GenericTypeArguments.Length > 0)
                     {
                         return value;
                     }
@@ -215,12 +271,12 @@ namespace BinaryExpressionConverter
                 }
                 return value;
             }
-            PoshBinaryConverterObject returnObj = new PoshBinaryConverterObject();
+            PoshBinaryConverterObject returnObj = new();
             var plainTextBytes = System.Text.Encoding.UTF8.GetBytes(script);
             var base64 = System.Convert.ToBase64String(plainTextBytes);
             var values = _sState.InvokeCommand.InvokeScript($@"
                     $Expression = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String('{base64}'))
-                    $returnObject = [BinaryExpressionConverter.PoshBinaryConverterObject]::new()
+                    $returnObject = [EFPosh.PoshBinaryConverterObject]::new()
                     $returnObject.Value = . ([scriptblock]::Create($Expression))
                     return $returnObject
                 ");
@@ -242,7 +298,7 @@ namespace BinaryExpressionConverter
                 }
                 if (value.GetType().IsArray)
                 {
-                    if (value.GetType().GetTypeInfo().GenericTypeArguments.Count() > 0)
+                    if (value.GetType().GetTypeInfo().GenericTypeArguments.Length > 0)
                     {
                         return value;
                     }
@@ -282,6 +338,7 @@ namespace BinaryExpressionConverter
         /// <returns></returns>
         private object EnsureType(object value, Type ensureType)
         {
+            if(ensureType == null) { return value; }
             var poshConverterType = typeof(PoshConverter<>).MakeGenericType(new Type[] { ensureType });
             object poshConverter = Activator.CreateInstance(poshConverterType);
             var values = _sState.InvokeCommand.InvokeScript("param($value, $convertObj) return $convertObj.ConvertObject($value);", new[] { value, poshConverter });

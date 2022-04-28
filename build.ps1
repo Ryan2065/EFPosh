@@ -2,18 +2,17 @@ $RebuildBinaries = $true
 
 $ModuleLocation = [System.IO.Path]::Combine($PSScriptRoot, "src", "Module", "EFPosh")
 $EFPoshProjLocation = [System.IO.Path]::Combine($PSScriptRoot, "src", "EFPosh", "EFPosh")
+$PoshLoggingProjectLocation = [System.IO.Path]::Combine($PSScriptRoot, "src", "EFPosh", "PoshLogger")
 
 
 #region Publish
-
-$BinaryExpConvertProjLocation = [System.IO.Path]::Combine($PSScriptRoot, "src", "EFPosh", "BinaryExpressionConverter")
 
 $LastBuildTimeFile = [System.IO.Path]::Combine($($env:temp), "EFPoshLastBuildTime.txt")
 if(Test-Path $LastBuildTimeFile -ErrorAction SilentlyContinue){
   try{
     $LastBuildTime = Get-Content $LastBuildTimeFile | ConvertFrom-JSON
-    $FilesToCheck = Get-ChildItem $EFPoshProjLocation -File
-    $FilesToCheck += Get-ChildItem $BinaryExpConvertProjLocation -File
+    $FilesToCheck = Get-ChildItem $EFPoshProjLocation -File -Recurse -Depth 2 -Filter '*.cs'
+    $FilesToCheck += Get-ChildItem $PoshLoggingProjectLocation -File -Recurse -Depth 2 -Filter '*.cs'
     $RebuildBinaries = $false
     foreach($file in $FilesToCheck){
       if($LastBuildTime -lt $file.LastWriteTime){
@@ -50,24 +49,7 @@ if($RebuildBinaries){
   $Net6PublishFolder = [System.IO.Path]::Combine($EFPoshProjLocation, 'bin', 'Release', 'net6.0', 'publish')
   $null = Copy-Item -Path "$Net47PublishFolder\*" -Destination "$Net47Folder\"  -Force -Recurse
   $null = Copy-Item -Path "$Net6PublishFolder\*" -Destination "$Net6Folder\"  -Force -Recurse
-  
-  $refFolderPath = [System.IO.Path]::Combine($Net6Folder, 'ref')
-  if(Test-Path $refFolderPath){
-      Remove-Item $refFolderPath -Force -Recurse
-  }
-  
-  $RuntimeFoldersToKeep = @(
-      'win-x64',
-      'win-x86',
-      'linux-x64',
-      'osx'
-  )
-  $RuntimeFolders = Get-ChildItem ([System.IO.Path]::Combine($Net6Folder, 'runtimes')) -Directory
-  foreach($RuntimeFolder in $RuntimeFolders){
-      if($RuntimeFoldersToKeep -notcontains $RuntimeFolder.BaseName){
-          Remove-Item $RuntimeFolder.FullName -Recurse -Force
-      }
-  }
+
   [DateTime]::Now | ConvertTo-JSON | Out-File $LastBuildTimeFile -Force
 }
 

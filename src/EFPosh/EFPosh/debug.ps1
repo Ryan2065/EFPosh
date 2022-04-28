@@ -1,17 +1,7 @@
-$env:EFPoshDependencyFolder = Get-Location
+$DebugPreference = 'Continue'
+$VerbosePreference = 'Continue'
+$InformationPreference = 'Continue'
 
-Import-Module ([System.IO.Path]::Combine((Get-Item $PSScriptRoot).Parent.Parent.FullName, 'Module', 'EFPosh')) -Force
+$env:EFPoshDependencyFolder = "C:\Users\Ryan2\OneDrive\Code\EFPosh\src\EFPosh\EFPosh\bin\Debug\net6.0"
 
-if(Test-Path 'EAMonitor.sqlite' -ErrorAction SilentlyContinue){
-    $null =Remove-Item 'EAMonitor.Sqlite' -Force
-}
-
-Import-Module "C:\Users\Ryan2\OneDrive\Code\EAMonitor\src\EAMonitor" -Force
-
-Initialize-EAMonitor -SqliteFilePath 'EAMonitor.Sqlite' -CreateDb
-
-Import-EAMonitor -Path 'C:\Users\Ryan2\OneDrive\Code\EAMonitor\src\FakeMonitor.tests.ps1'
-
-Set-EAMonitorSetting -SettingKey 'TestKey' -Value 'MyValue2'
-Get-EAMonitorSetting -MonitorName 'FakeMonitor'
-
+. C:\Users\Ryan2\OneDrive\Code\EFPosh\src\Tests\_TestOrchestrator.ps1

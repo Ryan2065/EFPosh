@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using System.Collections.Concurrent;
 
 namespace EFPosh
 {
@@ -7,7 +8,7 @@ namespace EFPosh
     /// </summary>
     public class PoshContext : DbContext
     {
-        private PoshEntity[] _types;
+        private readonly PoshEntity[] _types;
         public PoshContext(DbContextOptions options, PoshEntity[] Types) : base(options)
         {
             _types = Types;

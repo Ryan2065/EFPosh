@@ -116,8 +116,7 @@ Function Search-EFPosh{
     )
     if($Expression){
         try{
-            $ConvertedExpression = ConvertTo-BinaryExpression -FuncType $Entity.GetBaseType() -Expression $Expression -Arguments @($Arguments)
-            $Entity.ApplyExpression($ConvertedExpression)
+            $Entity.ApplyExpression($Expression, $Arguments)
         }
         catch{
             throw

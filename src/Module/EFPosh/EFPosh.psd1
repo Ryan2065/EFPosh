@@ -77,11 +77,12 @@ FunctionsToExport = @(
     'Search-EFPosh',
     'New-EFPoshEntity',
     'Add-EFPoshEntity',
-    'Save-EFPoshChanges'
+    'Save-EFPoshChanges',
+    'Remove-EFPoshEntity'
 )
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
-CmdletsToExport = @('ConvertTo-BinaryExpression')
+# CmdletsToExport = @()
 
 # Variables to export from this module
 VariablesToExport = @()

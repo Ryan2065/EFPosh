@@ -8,7 +8,10 @@
     "EFPoshPWSH": {
       "commandName": "Executable",
       "executablePath": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
-      "commandLineArgs": "-NoExit -File C:\\Users\\Ryan2\\OneDrive\\Code\\EFPosh\\src\\KillNormalPosh.ps1",
+      "commandLineArgs": "-NoExit -File C:\\Users\\Ryan2\\OneDrive\\Code\\EFPosh\\src\\EFPosh\\EFPosh\\debug.ps1",
+      "environmentVariables": {
+        "EFPoshDependencyFolder": "C:\\Users\\Ryan2\\OneDrive\\Code\\EFPosh\\src\\EFPosh\\EFPosh\\bin\\Debug\\net6.0"
+      },
       "nativeDebugging": false
     },
     "EFPoshWSL": {

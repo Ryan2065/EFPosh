@@ -5,7 +5,7 @@ VisualStudioVersion = 17.0.32014.148
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EFPosh", "EFPosh\EFPosh.csproj", "{AD063317-A985-4D75-8ECA-03038FFC6AB5}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BinaryExpressionConverter", "BinaryExpressionConverter\BinaryExpressionConverter.csproj", "{66BC363C-C5BD-47F9-BEEC-099CEBE32CDA}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PoshLogger", "PoshLogger\PoshLogger.csproj", "{02F8E9BA-67F3-4217-9BB3-93508D4BD15D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -17,10 +17,10 @@ Global
 		{AD063317-A985-4D75-8ECA-03038FFC6AB5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AD063317-A985-4D75-8ECA-03038FFC6AB5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{AD063317-A985-4D75-8ECA-03038FFC6AB5}.Release|Any CPU.Build.0 = Release|Any CPU
-		{66BC363C-C5BD-47F9-BEEC-099CEBE32CDA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{66BC363C-C5BD-47F9-BEEC-099CEBE32CDA}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{66BC363C-C5BD-47F9-BEEC-099CEBE32CDA}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{66BC363C-C5BD-47F9-BEEC-099CEBE32CDA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{02F8E9BA-67F3-4217-9BB3-93508D4BD15D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{02F8E9BA-67F3-4217-9BB3-93508D4BD15D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{02F8E9BA-67F3-4217-9BB3-93508D4BD15D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{02F8E9BA-67F3-4217-9BB3-93508D4BD15D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
