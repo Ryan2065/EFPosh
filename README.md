@@ -50,31 +50,37 @@ You can add an object to the database:
 $NewObject = [TestTableTwo]::new()
 $NewObject.Name = 'MyTest'
 
-$Context.Add( $NewObject )
-$Context.SaveChanges()
+Add-EFPoshEntity -Entity $NewObject -SaveChanges
 ```
 
 You can query for existing objects:
 
 ``` PowerShell
-Search-EFPosh -Entity $Context.TestTableTwo -Expression { $_.Name -eq 'MyTest' }
+Search-EFPosh -DbContext $Context -Entity TestTableTwo -Expression { $_.Name -eq 'MyTest' }
 ```
 
-Querying with variables is easy also, but not straight-forward:
+For simple querying with variables, all you have to do is:
+
+``` PowerShell
+Search-EFPosh -DbContext $Context -Entity TestTableTwo -Expression { $_.Name -eq $SearchFor } 
+```
+
+There is another way to query if the above doesn't work. Sometimes we can't get the value of the variable, so if that happens
+use the -Arguments switch to provide it, and $0 for the variable! 
 
 ``` PowerShell
 $SearchFor = 'MyTest'
-Search-EFPosh -Entity $Context.TestTableTwo -Expression { $_.Name -eq $0 } -Arguments @($SearchFor)
+Search-EFPosh -DbContext $Context -Entity TestTableTwo -Expression { $_.Name -eq $0 } -Arguments @($SearchFor)
 ```
 
-In the above example, use number variables representing the index in the Arguments array. So $0 corresponds to index 0 in Arguments.
+In the above example, use number variables representing the index in the Arguments array. So $0 corresponds to index 0 in Arguments, $1 corresponds to 1, etc.
 
 You can easily edit objects in the database:
 
 ``` PowerShell
-$Result = Search-EFPosh -Entity $Context.TestTableTwo -FirstOrDefault
+$Result = Search-EFPosh -DbContext $Context -Entity TestTableTwo -FirstOrDefault
 $Result.Name = 'MyNewName'
-$Context.SaveChanges()
+Save-EFposhChanges -Context $Context
 ```
 
 Please let me know if you have any issues!

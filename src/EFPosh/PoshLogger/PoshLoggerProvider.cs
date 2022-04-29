@@ -7,6 +7,9 @@ using System.Text;
 
 namespace PoshLogger
 {
+    /// <summary>
+    /// Logging provider. A lot of ceremony
+    /// </summary>
     public class PoshLoggerProvider : ILoggerProvider
     {
         private PoshLoggerConfiguration _currentConfig;

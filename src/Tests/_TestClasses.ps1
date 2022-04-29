@@ -6,10 +6,10 @@ Class TestTableOne {
     [Key()]
     [DatabaseGenerated([DatabaseGeneratedOption]::Identity)]
     [int] $Id
+    
     [string]$Name
 
-    [ForeignKey("TableOneId")]
-    [TestTableTwo]$RelationshipOne
+    [TestTableTwo]$TableTwo
 }
 
 Class TestTableTwo {
@@ -17,14 +17,14 @@ Class TestTableTwo {
     [DatabaseGenerated([DatabaseGeneratedOption]::Identity)]
     [int]$Id
 
-    [ForeignKey("RelationshipTwo")]
     [int]$TableOneId
-    [TestTableOne]$RelationshipTwo
+    [ForeignKey("TableOneId")]
+    [TestTableOne]$TableOne
 
     [string]$Name
 
-    [ForeignKey("TableThree")]
     [int]$TableThreeId
+    [ForeignKey("TableThreeId")]
     [TestTableThree]$TableThree
 }
 
@@ -35,7 +35,6 @@ Class TestTableThree {
 
     [string]$Name
 
-    [ForeignKey("TableThreeId")]
     [ICollection[TestTableTwo]]$TableTwos
 
 }

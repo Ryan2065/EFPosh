@@ -1,7 +1,7 @@
 Function Add-EFPoshEntity{
     <#
     .SYNOPSIS
-    Adds an entity to a database
+    Adds an entity to the database
     
     .DESCRIPTION
     Will add an entity to a database and queue it for inserting. Use -SaveChanges switch to commit change immediately

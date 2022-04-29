@@ -1,12 +1,20 @@
-. C:\Users\Ryan2\OneDrive\Code\EFPosh\build.ps1
+Param([switch]$SkipBuild)
+if(-not $SkipBuild){
+    . C:\Users\Ryan2\OneDrive\Code\EFPosh\build.ps1
+}
 
-Import-Module Pester -Verbose:$false
+Import-Module Pester -MinimumVersion 5.0 -Verbose:$false
 
 Import-Module C:\Users\Ryan2\OneDrive\Code\EFPosh\src\Module\EFPosh -Force
+
+Get-Process sqlite-v3.26.0-win32-x86 -ErrorAction SilentlyContinue | Stop-Process -Force
 
 if(Test-Path "$PSScriptRoot\bin" -ErrorAction SilentlyContinue){
     cmd /c rd "$PSScriptRoot\bin" /s /q
 }
+
+#$VerbosePreference = "Continue"
+#$DebugPreference = "Continue"
 
 $null = New-Item "$PSScriptRoot\bin" -ItemType Directory -Force
 
@@ -55,7 +63,10 @@ $DbContexts['Sqlite'] = New-EFPoshContext -SQLiteFile "$PSScriptRoot\bin\EFPoshT
 RemoveDb -ServerName 'Lab-CM.Home.Lab' -DbName 'EFPoshTestDb'
 $DbContexts['MSSQL'] = New-EFPoshContext -MSSQLServer 'Lab-CM.Home.Lab' -MSSQLDatabase 'EFPoshTestDb' -MSSQLIntegratedSecurity $true @ContextParams
 
+$Containers = @()
+
 foreach($key in $DbContexts.Keys){
-    $Container = New-PesterContainer -Path "$PSScriptRoot\1_ModifyData.tests.ps1" -Data @{ DbType = $key; DbContext = $DbContexts[$key] }
-    Invoke-Pester -Container $Container
+    $Containers += New-PesterContainer -Path "$PSScriptRoot\1_ModifyData.tests.ps1" -Data @{ DbType = $key; DbContext = $DbContexts[$key] }
+    $Containers += New-PesterContainer -Path "$PSScriptRoot\2_SearchData.tests.ps1" -Data @{ DbType = $key; DbContext = $DbContexts[$key]; ContextParams = $ContextParams }
 }
+Invoke-Pester -Container $Containers

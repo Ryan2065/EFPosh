@@ -4,6 +4,9 @@ using System.Text;
 
 namespace PoshLogger
 {
+    /// <summary>
+    /// Message to be queued for writing in PowerShell
+    /// </summary>
     public class PoshLoggerEntry
     {
         public string Message { get; set; }

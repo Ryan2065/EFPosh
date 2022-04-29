@@ -101,10 +101,10 @@ Function Add-EFPoshModelEntity {
     }
     $Context = $Script:ContextFileSettings.Context
     if($EntityType -eq 'Function'){
-        $SchemaInfo = $Context.MSSQLInformationSchemaColumns.FromSql('Select * FROM Information_Schema.Routine_Columns').TABLE_SCHEMA.Equals($DBSchema).And.TABLE_NAME.Equals($Name).ToList()
+        $SchemaInfo = Search-EFPosh -DbContext $Context -Entity 'MSSQLInformationSchemaColumns' -FromSql 'Select * FROM Information_Schema.Routine_Columns' -Expression { $_.TABLE_SCHEMA -eq $DBSchema -and $_.TABLE_NAME -eq $Name }
     }
     else{
-        $SchemaInfo = $Context.MSSQLInformationSchemaColumns.TABLE_SCHEMA.Equals($DBSchema).And.TABLE_NAME.Equals($Name).ToList()
+        $SchemaInfo = Search-EFPosh -DbContext $Context -Entity 'MSSQLInformationSchemaColumns'  -Expression { $_.TABLE_SCHEMA -eq $DBSchema -and $_.TABLE_NAME -eq $Name }
     }
     
     if($null -eq $PropertyList) {
@@ -124,7 +124,7 @@ Function Add-EFPoshModelEntity {
     $ClassBuilder += "##ClassDefinitions##"
     $ClassString = $ClassBuilder -join [System.Environment]::NewLine
     $strPKs = '-Keyless'
-    $foundPrimaryKeys = $Context.MSSQLInformationSchemaPrimaryKeys.FromSql("
+    $foundPrimaryKeys = Search-EFPosh -DbContext $Context -Entity 'MSSQLInformationSchemaPrimaryKeys' -Expression { $_.TABLESCHEMA -eq $DBSchema -and $_.TABLENAME -eq $Name } -FromSql "
         SELECT 
             KU.table_name as TABLENAME
             ,column_name as PRIMARYKEYCOLUMN
@@ -135,7 +135,7 @@ Function Add-EFPoshModelEntity {
             INFORMATION_SCHEMA.KEY_COLUMN_USAGE AS KU
                 ON TC.CONSTRAINT_TYPE = 'PRIMARY KEY' AND
                     TC.CONSTRAINT_NAME = KU.CONSTRAINT_NAME 
-    ").TABLENAME.Equals($Name).And.TABLESCHEMA.Equals($DBSchema).ToList()
+    "
     if($foundPrimaryKeys.Count -gt 0){
         $foundPrimaryKeys = $foundPrimaryKeys | Sort-Object -Property POSITION
         

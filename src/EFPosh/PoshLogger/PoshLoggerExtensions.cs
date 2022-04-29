@@ -9,6 +9,9 @@ using System.Text;
 
 namespace PoshLogger
 {
+    /// <summary>
+    /// Extension class to add loggers to service collections
+    /// </summary>
     public static class PoshILoggerExtensions
     {
         public static ILoggingBuilder AddPoshLogger(

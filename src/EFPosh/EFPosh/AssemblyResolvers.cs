@@ -17,9 +17,15 @@ using System.Text.Json.Nodes;
 
 namespace EFPosh
 {
+    /// <summary>
+    /// Methods used to resolve the correct assemblies for the different runtimes we run on
+    /// </summary>
     public static class AssemblyResolvers
     {
         private static readonly PoshILogger _logger = new(LogLevel.Information);
+        /// <summary>
+        /// Will ensure the EFPosh assembly is in the list of places to search, but at the end.
+        /// </summary>
         private static void FindFoldersToCheckForDlls()
         {
             var assemblyFolder = Path.GetDirectoryName(typeof(PoshContextInteractions).Assembly.Location);
@@ -35,6 +41,10 @@ namespace EFPosh
         public static List<string> DllPathsToCheck { get; set; } = new();
 
 #if NET6_0
+        /// <summary>
+        /// Loads the Microsoft.Data.SqlClient library. By default, the version of the library built and bundled
+        /// in .net6 is .netframework2.0, which does not work in Posh. This has to load the .netcore3.1 version
+        /// </summary>
         public static void LoadSqlClient()
         {
             if (LoadedSqlClientResolver) { return; }
@@ -68,6 +78,13 @@ namespace EFPosh
                 }
             }
         }
+        /// <summary>
+        /// Resolves the Data.SqlClient native assembly
+        /// </summary>
+        /// <param name="libraryName">name of the library to resolve</param>
+        /// <param name="assembly">assembly requesting it</param>
+        /// <param name="searchPath">Where it searched? We use our own</param>
+        /// <returns>Hopefully the correct path to the assembly</returns>
         internal static IntPtr NativeAssemblyResolverSqlClient(string libraryName, Assembly assembly, DllImportSearchPath? searchPath)
         {
             if (!libraryName.Equals("Microsoft.Data.SqlClient.SNI.dll", StringComparison.OrdinalIgnoreCase) || !RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -94,6 +111,13 @@ namespace EFPosh
             }
             return libHandle;
         }
+        /// <summary>
+        /// Resolves the sqlite native assembly
+        /// </summary>
+        /// <param name="libraryName">Library we are trying to find</param>
+        /// <param name="assembly">Assembly requesting this</param>
+        /// <param name="searchPath">Where it searched? we use our own</param>
+        /// <returns>Hopefully the correct path to the native assembly</returns>
         internal static IntPtr NativeAssemblyResolver(string libraryName, Assembly assembly, DllImportSearchPath? searchPath)
         {
             if (!libraryName.Equals("e_sqlite3", StringComparison.OrdinalIgnoreCase))
@@ -132,6 +156,12 @@ namespace EFPosh
             return libHandle;
         }
 #endif
+        /// <summary>
+        /// Loads assemblys for Entity Framework if not auto-loaded by .Net. Just a fallback
+        /// </summary>
+        /// <param name="sender">Who set this</param>
+        /// <param name="args">Assembly it's looking for</param>
+        /// <returns>Location of assembly</returns>
         internal static Assembly PoshResolveEventHandler(object sender, ResolveEventArgs args)
         {
             FindFoldersToCheckForDlls();

@@ -18,6 +18,7 @@ namespace EFPosh
         private readonly ParameterExpression _p;
         private readonly SessionState _sState;
         private object[] arguments;
+        private Dictionary<string, object> variableValues = new Dictionary<string, object>();
         /// <summary>
         /// Constructor
         /// </summary>
@@ -27,15 +28,20 @@ namespace EFPosh
             _p = Expression.Parameter(typeof(T), "p");
             _sState = sState;
         }
+        public PoshBinaryConverter()
+        {
+            _p = Expression.Parameter(typeof(T), "p");
+        }
         /// <summary>
         /// Entry point to fulfill the Interface
         /// </summary>
         /// <param name="binaryExpression">Expression from user</param>
         /// <param name="Arguments">Parameters from user</param>
         /// <returns>Converted lambda expression - Listed as object because type isn't exactly known and posh gets it as an object anyway</returns>
-        public Expression<Func<T, bool>> ConvertBinaryExpression(ScriptBlock sb, object[] Arguments)
+        public Expression<Func<T, bool>> ConvertBinaryExpression(ScriptBlock sb, object[] Arguments, Dictionary<string, object> VariableValues)
         {
             var binaryExpression = sb.Ast.FindAll(p => p.GetType().Name.Equals("BinaryExpressionAst"), true).FirstOrDefault();
+            variableValues = VariableValues;
             arguments = Arguments;
             Expression finalExpression = null;
             if (binaryExpression != null)
@@ -53,6 +59,21 @@ namespace EFPosh
             return Expression.Lambda<Func<T, bool>>(finalExpression, _p);
         }
         /// <summary>
+        /// Evaluates the expressions and sees if we require an array or not.
+        /// PowerShell will automatically convert single objects to non-arrays, even if they were arrays at the start
+        /// So we have to figure out if we need an array to send to Linq for things like array.Contains(value)
+        /// </summary>
+        /// <param name="ast">Ast to evaluate</param>
+        /// <param name="valueExpression">The expression whose type we're getting</param>
+        /// <returns>True if the type should be an array</returns>
+        private bool TypeNeedsArray(BinaryExpressionAst ast, ExpressionAst valueExpression)
+        {
+            List<TokenKind> operators = new() { TokenKind.Ccontains, TokenKind.Cnotcontains, TokenKind.Icontains, TokenKind.Inotcontains };
+            if (operators.Contains(ast.Operator)) { return true; }
+            if (valueExpression.ToString().Contains("@(")) { return true; }
+            return false;
+        }
+        /// <summary>
         /// Main control to get the Left and Right of the expression and then add in the operator.
         /// </summary>
         /// <param name="ast">PowerShell ast</param>
@@ -60,18 +81,17 @@ namespace EFPosh
         /// <exception cref="Exception">Will throw if something unexpected comes from PowerShell</exception>
         private Expression BuildExpression(BinaryExpressionAst ast)
         {
-            var leftExpression = GetExpression(ast.Left);
-            var rightExpression = GetExpression(ast.Right);
-
+            var leftExpression = GetExpression(ast.Left, null, TypeNeedsArray(ast, ast.Left));
+            var rightExpression = GetExpression(ast.Right, null, TypeNeedsArray(ast, ast.Right));
             if(leftExpression.Type != rightExpression.Type && (leftExpression.ToString() != "null" && rightExpression.ToString() != "null"))
             {
                 if (ast.Left.ToString().Contains("$_"))
                 {
-                    rightExpression = GetExpression(ast.Right, leftExpression.Type);
+                    rightExpression = GetExpression(ast.Right, leftExpression.Type, TypeNeedsArray(ast, ast.Right));
                 }
                 else if(ast.Right.ToString().Contains("$_"))
                 {
-                    leftExpression = GetExpression(ast.Left, rightExpression.Type);
+                    leftExpression = GetExpression(ast.Left, rightExpression.Type, TypeNeedsArray(ast, ast.Left));
                 }
             }
 
@@ -125,7 +145,7 @@ namespace EFPosh
         /// <param name="ensureType">Used if this was run once and an expression of the wrong base type was found</param>
         /// <returns>Linq expression</returns>
         /// <exception cref="Exception">Thrown if cannot make expression</exception>
-        private Expression GetExpression(ExpressionAst expAst, Type ensureType = null)
+        private Expression GetExpression(ExpressionAst expAst, Type ensureType = null, bool forceArray = false)
         {
             Expression returnValue = null;
             switch (expAst)
@@ -137,7 +157,7 @@ namespace EFPosh
                     }
                     else
                     {
-                        returnValue = Expression.Constant(GetPoshValue(vexp, ensureType));
+                        returnValue = Expression.Constant(GetPoshValue(vexp, ensureType, forceArray));
                     }
                     break;
                 case InvokeMemberExpressionAst imexp:
@@ -146,9 +166,14 @@ namespace EFPosh
                     {
                         arguments.Add(GetExpression(arg));
                     }
-                    var baseExp = GetExpression(imexp.Expression);
                     var imexValue = imexp.Member.SafeGetValue().ToString();
-                    var methods = baseExp.Type.GetMethods().Where(p => p.Name == imexValue).ToList();
+                    if(imexValue.Equals("contains", StringComparison.OrdinalIgnoreCase))
+                    {
+                        forceArray = true;
+                    }
+                    var baseExp = GetExpression(imexp.Expression, null, forceArray);
+                    
+                    var methods = baseExp.Type.GetMethods().Where(p => p.Name.Equals(imexValue, StringComparison.OrdinalIgnoreCase)).ToList();
                     List<MethodInfo> acceptableMethods = new();
                     // trying to find an acceptable method - find methods that can accept the number of argumets we have
                     // Then looks to make sure the types are correct
@@ -187,7 +212,7 @@ namespace EFPosh
                                 // This case is for $_."$Name" to expand $Name and get the property name
                                 if (propertyInfo == null && prop.Contains('$'))
                                 {
-                                    var value = GetPoshValue(ScriptBlock.Create(prop).Ast, ensureType);
+                                    var value = GetPoshValue(ScriptBlock.Create(prop).Ast, ensureType, forceArray);
                                     propertyInfo = ty.GetProperties().Where(p => p.Name.ToLower() == value.ToString().ToLower()).FirstOrDefault();
                                 }
                                 ty = propertyInfo.PropertyType;
@@ -197,7 +222,7 @@ namespace EFPosh
                     }
                     else
                     {
-                        returnValue = Expression.Constant(GetPoshValue(mexp, ensureType));
+                        returnValue = Expression.Constant(GetPoshValue(mexp, ensureType, forceArray));
                     }
                     break;
                 case ParenExpressionAst pExp:
@@ -214,10 +239,10 @@ namespace EFPosh
                     returnValue = Expression.Constant(cexp.Value);
                     break;
                 case IndexExpressionAst iexp:
-                    returnValue = Expression.Constant(GetPoshValue(iexp, ensureType));
+                    returnValue = Expression.Constant(GetPoshValue(iexp, ensureType, forceArray));
                     break;
                 case ArrayExpressionAst aexp:
-                    returnValue = Expression.Constant(GetPoshValue(aexp, ensureType));
+                    returnValue = Expression.Constant(GetPoshValue(aexp, ensureType, true));
                     break;
                 default:
                     throw new Exception("Could not convert AST because it's an unknown type");
@@ -232,15 +257,29 @@ namespace EFPosh
         /// <param name="ensureType">EnsureType will be used if the wrong type was gotten once, and it needs to rerun to get the correct type</param>
         /// <returns>Hopefully an object of the correct type</returns>
         /// <exception cref="Exception">If the value cannot be found</exception>
-        private object GetPoshValue(Ast expAst, Type ensureType = null)
+        private object GetPoshValue(Ast expAst, Type ensureType, bool forceArray)
         {
+            if (variableValues.TryGetValue(expAst.ToString(), out var val))
+            {
+                return EnsureType(val, ensureType, forceArray);
+            }
+            object obj = null;
             try
             {
-                var obj = expAst.SafeGetValue();
-                return EnsureType(obj, ensureType);
+                // this will usually error
+                obj = expAst.SafeGetValue();
+                
             }
             catch { }
+            if(obj != null)
+            {
+                return EnsureType(obj, ensureType, forceArray);
+            }
             var script = expAst.ToString().TrimStart('"').TrimEnd('"');
+            if (variableValues.TryGetValue(script, out var valTrimmed))
+            {
+                return EnsureType(valTrimmed, ensureType, forceArray);
+            }
             var index = script.TrimStart('$').Trim();
             object value;
             if (int.TryParse(index, out int i))
@@ -249,7 +288,7 @@ namespace EFPosh
                 if (value == null) { return value; }
                 else if (ensureType != null)
                 {
-                    return EnsureType(value, ensureType);
+                    return EnsureType(value, ensureType, forceArray);
                 }
                 if (value.GetType().IsArray)
                 {
@@ -271,59 +310,7 @@ namespace EFPosh
                 }
                 return value;
             }
-            PoshBinaryConverterObject returnObj = new();
-            var plainTextBytes = System.Text.Encoding.UTF8.GetBytes(script);
-            var base64 = System.Convert.ToBase64String(plainTextBytes);
-            var values = _sState.InvokeCommand.InvokeScript($@"
-                    $Expression = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String('{base64}'))
-                    $returnObject = [EFPosh.PoshBinaryConverterObject]::new()
-                    $returnObject.Value = . ([scriptblock]::Create($Expression))
-                    return $returnObject
-                ");
-            if (values.Count != 1)
-            {
-                throw new Exception($"Could not get value from {script}");
-            }
-            returnObj = (PoshBinaryConverterObject)(values[0].BaseObject);
-            if (script.StartsWith("@("))
-            {
-                value = returnObj.Value;
-                if (value == null)
-                {
-                    return value;
-                }
-                else if (ensureType != null)
-                {
-                    return EnsureType(value, ensureType);
-                }
-                if (value.GetType().IsArray)
-                {
-                    if (value.GetType().GetTypeInfo().GenericTypeArguments.Length > 0)
-                    {
-                        return value;
-                    }
-                    var arrayObject = value as Array;
-                    foreach (var instance in arrayObject)
-                    {
-                        var baseType = typeof(PoshBinaryConverter<T>);
-                        var methDef = baseType.GetMethods().Where(p => p.Name == "MakeList").FirstOrDefault();
-                        var ty = instance.GetType();
-                        if (ty.Name == "Object") { ty = ty.BaseType; }
-                        return methDef.MakeGenericMethod(ty)
-                            .Invoke(this, new object[] { value });
-                    }
-                }
-                else if (value != null)
-                {
-                    var baseType = typeof(PoshBinaryConverter<T>);
-                    var methDef = baseType.GetMethods().Where(p => p.Name == "MakeList").FirstOrDefault();
-                    var ty = value.GetType();
-                    if (ty.Name == "Object") { ty = ty.BaseType; }
-                    return methDef.MakeGenericMethod(ty)
-                        .Invoke(this, new object[] { new[] { value } });
-                }
-            }
-
+            
             throw new Exception($"Could not expand {script} - Consider using -ArgumentList to pass arguments!");
         }
 
@@ -336,12 +323,43 @@ namespace EFPosh
         /// <param name="value">Value to be converted</param>
         /// <param name="ensureType">Type to be converted to</param>
         /// <returns></returns>
-        private object EnsureType(object value, Type ensureType)
+        private object EnsureType(object value, Type ensureType, bool forceArray)
         {
-            if(ensureType == null) { return value; }
+            if (forceArray)
+            {
+                var objList = new List<object>();
+                if (value.GetType().IsArray)
+                {
+                    foreach (var o in (Array)value)
+                    {
+                        objList.Add(o);
+                    }
+                }
+                else
+                {
+                    objList.Add(value);
+                }
+                var baseType = typeof(PoshBinaryConverter<T>);
+                var methDef = baseType.GetMethods().Where(p => p.Name == "MakeList").FirstOrDefault();
+                var ty = ensureType;
+                if (ensureType == null)
+                {
+                    ty = objList[0].GetType();
+                }
+                if (ty.Name == "Object") { ty = ty.BaseType; }
+                return methDef.MakeGenericMethod(ty)
+                    .Invoke(this, new object[] { objList.ToArray() });
+            }
+            if (ensureType == null) { return value; }
+            // use PowerShell to convert 
             var poshConverterType = typeof(PoshConverter<>).MakeGenericType(new Type[] { ensureType });
             object poshConverter = Activator.CreateInstance(poshConverterType);
-            var values = _sState.InvokeCommand.InvokeScript("param($value, $convertObj) return $convertObj.ConvertObject($value);", new[] { value, poshConverter });
+            var powerShell = PowerShell.Create(System.Management.Automation.RunspaceMode.CurrentRunspace);
+            powerShell.Commands.Clear();
+            powerShell.Commands.AddScript("param($value, $convertObj) return $convertObj.ConvertObject($value);");
+            powerShell.Commands.AddParameter("name", value);
+            powerShell.Commands.AddParameter("convertObj", poshConverter);
+            var values = powerShell.Invoke();
             if(values.Count == 1)
             {
                 return values[0].BaseObject;

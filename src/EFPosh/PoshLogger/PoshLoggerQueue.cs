@@ -4,16 +4,33 @@ using System.Collections.Generic;
 
 namespace PoshLogger
 {
+    /// <summary>
+    /// Queue class to write the logs in PowerShell
+    /// </summary>
     public static class PoshLoggerQueue
     {
+        /// <summary>
+        /// Event handler when a new message is added
+        /// </summary>
+        /// <param name="handler"></param>
         public delegate void EnqueueHandler(PoshLoggerEntry handler);
-
+        /// <summary>
+        /// Event when a new message is added - is subscribed to inside of PowerShell
+        /// </summary>
         public static event EnqueueHandler OnEnqueue;
-        
+        /// <summary>
+        /// The queue of messages to write
+        /// </summary>
         private static readonly ConcurrentQueue<PoshLoggerEntry> _queue = new ConcurrentQueue<PoshLoggerEntry>();
-
+        /// <summary>
+        /// Is this enabled? Is true if the event is set up in PowerShell
+        /// </summary>
         private static bool Enabled { get; set; } = false;
-        
+        /// <summary>
+        /// Queue up a log. Sometimes this will be called from another thread, and if it is OnEnqueue will fail
+        /// That's ok, .net is loud and the next time it's called from the correct thread those messages will get picked up
+        /// </summary>
+        /// <param name="entry">Log entry to queue up</param>
         public static void Enqueue(PoshLoggerEntry entry)
         {
             if (!Enabled)
@@ -31,7 +48,10 @@ namespace PoshLogger
                 // sometimes this will fail. If this is running from a separate thread from the runspace, it'll fail
             }
         }
-        
+        /// <summary>
+        /// Method called from PowerShell to get all queued messages to write
+        /// </summary>
+        /// <returns>Queued messages</returns>
         public static IEnumerable<PoshLoggerEntry> Dequeue()
         {
             while(_queue.TryDequeue(out var queueItem))
@@ -39,7 +59,10 @@ namespace PoshLogger
                 yield return queueItem;
             }
         }
-
+        /// <summary>
+        /// Sets up an event in PowerShell to respond to the event raised when new messages are queued.
+        /// Will perform the correct write action based on the queued messages
+        /// </summary>
         public static void Enable()
         {
             if (Enabled) { return; }
@@ -84,9 +107,8 @@ namespace PoshLogger
             }
             catch
             {
-                throw;
-                //Might not be running in PowerShell
-                //return;
+                //Might not be running in PowerShell - this just disables it
+                return;
             }
 
             Enabled = true;

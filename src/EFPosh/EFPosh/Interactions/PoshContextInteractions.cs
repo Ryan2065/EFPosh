@@ -118,7 +118,8 @@ namespace EFPosh
         )
             where T : DbContext
         {
-            
+            ConnectionString = connectionString;
+            _poshContext = null;
             var dbOptions = new DbContextOptionsBuilder<T>();
             IServiceCollection coll = new ServiceCollection();
             
@@ -172,7 +173,8 @@ namespace EFPosh
                 dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
             }
             _poshContext = dbContext;
-            if(Types == null) { return; }
+            DBContext = dbContext;
+            if (Types == null) { return; }
             foreach (var t in Types)
             {
                 if (!String.IsNullOrEmpty(t.FromSql))
@@ -181,7 +183,17 @@ namespace EFPosh
                 }
             }
         }
-
+        /// <summary>
+        /// Called if someone is using a context already compiled in a dll
+        /// </summary>
+        /// <param name="connectionString">Connection string for the db</param>
+        /// <param name="dbType">What type of DB are we connecting to</param>
+        /// <param name="EnsureCreated">Do we run the ensure created method?</param>
+        /// <param name="RunMigrations">Do we run the run migrations method?</param>
+        /// <param name="ReadOnly">True will create the db context and disable the change tracker</param>
+        /// <param name="dllPath">Path to assembly where the context is. This needs to be loaded in here with the assembly resolvers
+        ///                       so will need to be provided</param>
+        /// <param name="ContextClassName">Class of the DbContext</param>
         public void ExistingContext(
             string connectionString,
             string dbType,
@@ -201,6 +213,15 @@ namespace EFPosh
                     .MakeGenericMethod(type)
                     .Invoke(this, new object[] { connectionString, dbType, EnsureCreated, RunMigrations, ReadOnly, Types });
         }
+        /// <summary>
+        /// Creates a new DbContext based off classes defined in PowerShell
+        /// </summary>
+        /// <param name="connectionString">Connection string of the db we're connecting to</param>
+        /// <param name="dbType">What type of Db are we conencting to</param>
+        /// <param name="Types">Array of types to add to the Posh db context</param>
+        /// <param name="EnsureCreated">Do we want to make sure it is created?</param>
+        /// <param name="RunMigrations">Do we want to run any migrations stored in the context</param>
+        /// <param name="ReadOnly">Is this a read only db</param>
         public void NewPoshContext(
             string connectionString,
             string dbType,
@@ -213,23 +234,36 @@ namespace EFPosh
             NewDbContext<PoshContext>(connectionString, dbType, EnsureCreated, RunMigrations, ReadOnly, Types);
         }
         
+        /// <summary>
+        /// Public accessor for the DbContext - useful for users who want to inspect it or do advanced things
+        /// </summary>
         public DbContext DBContext
         {
             get { return _poshContext; }
             set { _poshContext = value; }
         }
-
-        public PoshEntityInteractions<T> NewQuery<T>()
+        /// <summary>
+        /// Called with reflection from TryGetMember - Will create a new PoshEntityInteraction class
+        /// </summary>
+        /// <typeparam name="T">Type of the Entity we're interacting with</typeparam>
+        /// <returns>Returns the PoshEntityInteraction</returns>
+        public PoshEntityInteractions<T> NewPoshEntityInteraction<T>()
             where T : class
         {
             var returnObject = new PoshEntityInteractions<T>(_poshContext);
             if (FromSqlEntities.ContainsKey(typeof(T).Name))
             {
-                returnObject.FromSql(FromSqlEntities[typeof(T).Name]);
+                returnObject.FromSql(FromSqlEntities[typeof(T).Name], true);
             }
             return returnObject;
         }
-        
+        /// <summary>
+        /// Sometimes PowerShell classes are duplicated. If that happens, someone might send us a correct class name, but
+        /// not the correct class type. This method attempts to fix this by finding the correct type in the Database context
+        /// and changing the object to that.
+        /// </summary>
+        /// <param name="obj">Object we are checking</param>
+        /// <returns>Hopefully the correct type</returns>
         private object ConvertType(object obj)
         {
             var objectType = obj.GetType();
@@ -253,7 +287,10 @@ namespace EFPosh
             }
             return obj;
         }
-                
+        /// <summary>
+        /// Used to add an entity to the database. Will correct the type if the entity does not have a correct type
+        /// </summary>
+        /// <param name="obj">Object to add to the db</param>
         public void Add(object obj)
         {
             try
@@ -265,7 +302,10 @@ namespace EFPosh
                 _poshContext.Add(ConvertType(obj));
             }
         }
-
+        /// <summary>
+        /// Adds a range of objects to the db. Will correct the types if they aren't correct.
+        /// </summary>
+        /// <param name="objs">Object to add to the db</param>
         public void AddRange(object[] objs)
         {
             try
@@ -282,12 +322,17 @@ namespace EFPosh
                 _poshContext.AddRange(NewObjectList);
             }
         }
-
+        /// <summary>
+        /// Call SaveChanges on the db context
+        /// </summary>
         public void SaveChanges()
         {
             _poshContext.SaveChanges();
         }
-
+        /// <summary>
+        /// Will remove an object from the db. This will correct types if they are wrong
+        /// </summary>
+        /// <param name="obj">Object to remove from the db</param>
         public void Remove(object obj)
         {
             try
@@ -299,7 +344,10 @@ namespace EFPosh
                 _poshContext.Remove(ConvertType(obj));
             }
         }
-
+        /// <summary>
+        /// Will remove a range of objects from the db. Will correct types if they are wrong
+        /// </summary>
+        /// <param name="objs">Objects to remove from the db</param>
         public void RemoveRange(object[] objs)
         {
             try
@@ -316,9 +364,16 @@ namespace EFPosh
                 _poshContext.RemoveRange(NewObjectList);
             }
         }
-
+        /// <summary>
+        /// Used in TryGetMember - Didn't want a new object created every time someone called $db.EntityName
+        /// </summary>
         private Dictionary<string, object> CachedEntities { get; set; } = new Dictionary<string, object>();
-
+        /// <summary>
+        /// Dynamic object requirement - this method will make all Entities accessible on the dbcontext
+        /// </summary>
+        /// <param name="binder">Default param</param>
+        /// <param name="result">Default param</param>
+        /// <returns>If it found something or not</returns>
         public override bool TryGetMember(GetMemberBinder binder,
                                   out object result)
         {
@@ -334,7 +389,7 @@ namespace EFPosh
                 if (requestedType != null)
                 {
                     CachedEntities[binder.Name.ToUpper()] = typeof(PoshContextInteractions)
-                        .GetMethod("NewQuery")
+                        .GetMethod("NewPoshEntityInteraction")
                         .MakeGenericMethod(requestedType)
                         .Invoke(this, null);
 
@@ -351,6 +406,10 @@ namespace EFPosh
             }
             return result != null;
         }
+        /// <summary>
+        /// Returns a list of entites in the Db Context - used in Posh to validate entities are correct
+        /// </summary>
+        /// <returns>List of entities</returns>
         public IEnumerable<string> GetEntities()
         {
             var typeList = _poshContext.Model
@@ -362,6 +421,11 @@ namespace EFPosh
                 yield return item.Name;
             }
         }
+        /// <summary>
+        /// Connection string used to create the Db. Useful when someone wants to re-create the Db
+        /// </summary>
+        public string ConnectionString { get; set; }
+
     }
     
 }
