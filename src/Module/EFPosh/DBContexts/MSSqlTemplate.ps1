@@ -1,20 +1,13 @@
 Param(
     [string]$Server = '##Server##',
     [string]$Database = '##Database##',
-    [bool]$IntegratedSecurity = '##IntegratedSecurity##',
-    [switch]$EFPoshLog
+    [bool]$IntegratedSecurity = '##IntegratedSecurity##'
 )
 
 if($null -eq ( Get-Module EFPosh )){
     Import-Module EFPosh -ErrorAction Stop
 }
-
-if($EFPoshLog){
-    $Env:EFPoshLog = 'true'
-}
-else{
-    $Env:EFPoshLog = $null
-}
+S
 
 #region Class Definitions
 
