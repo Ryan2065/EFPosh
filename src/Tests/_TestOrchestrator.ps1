@@ -1,33 +1,42 @@
 Param([switch]$SkipBuild)
 if(-not $SkipBuild){
-    . C:\Users\Ryan2\OneDrive\Code\EFPosh\build.ps1
+    #. C:\Users\Ryan2\OneDrive\Code\EFPosh\build.ps1
 }
+
+$ErrorActionPreference = 'Stop'
 
 Import-Module Pester -MinimumVersion 5.0 -Verbose:$false
+$EFposhModuleLocation = [System.IO.Path]::Combine((Get-Item $PSScriptRoot).Parent.FullName, "Module", "EFPosh")
+Import-Module $EFposhModuleLocation -Verbose:$false -Force
 
-Import-Module C:\Users\Ryan2\OneDrive\Code\EFPosh\src\Module\EFPosh -Force
-
+# VSCode locks the sqlite file
 Get-Process sqlite-v3.26.0-win32-x86 -ErrorAction SilentlyContinue | Stop-Process -Force
 
-if(Test-Path "$PSScriptRoot\bin" -ErrorAction SilentlyContinue){
-    cmd /c rd "$PSScriptRoot\bin" /s /q
+$BinFolder = [System.IO.Path]::Combine($PSScriptRoot, "bin")
+
+if(Test-Path $BinFolder -ErrorAction SilentlyContinue){
+    if($IsLinux){
+        Remove-Item $BinFolder -Force -Recurse
+    }
+    else{
+        #Remove-Item doesn't work on Posh5
+        cmd /c rd "$BinFolder" /s /q
+    }
+    
 }
 
-#$VerbosePreference = "Continue"
-#$DebugPreference = "Continue"
+$VerbosePreference = "Continue"
+$DebugPreference = "Continue"
 
-$null = New-Item "$PSScriptRoot\bin" -ItemType Directory -Force
+$null = New-Item $BinFolder -ItemType Directory -Force
 
-. "$PSScriptRoot\_TestClasses.ps1"
+. ( [System.IO.Path]::Combine($PSScriptRoot, "_TestClasses.ps1") )
 
 Function RemoveDb{
     Param(
-        [string]$ServerName,
         [string]$DbName
     )
-    $connectionString = "Data Source=$ServerName; " +
-    "Integrated Security=SSPI; " +
-    "Initial Catalog=master"
+    $connectionString = $env:EFPoshMasterSqlServerConnectionString
     $connection = new-object system.data.SqlClient.SQLConnection($connectionString)
     $connection.Open()
     try{
@@ -59,14 +68,21 @@ $ContextParams = @{
     'EnsureCreated' = $true
 }
 
-$DbContexts['Sqlite'] = New-EFPoshContext -SQLiteFile "$PSScriptRoot\bin\EFPoshTestDb.sqlite" @ContextParams
-RemoveDb -ServerName 'Lab-CM.Home.Lab' -DbName 'EFPoshTestDb'
-$DbContexts['MSSQL'] = New-EFPoshContext -MSSQLServer 'Lab-CM.Home.Lab' -MSSQLDatabase 'EFPoshTestDb' -MSSQLIntegratedSecurity $true @ContextParams
+$SqliteFile = [System.IO.Path]::Combine($PSScriptRoot, 'bin', 'EFPoshTestDb.sqlite')
+
+$DbContexts['Sqlite'] = New-EFPoshContext -SQLiteFile $SqliteFile @ContextParams
+
+RemoveDb -DbName 'EFPoshTestDb'
+$DbContexts['MSSQL'] = New-EFPoshContext -ConnectionString $env:EFPoshSqlServerConnectionString -DBType MSSQL @ContextParams
+
 
 $Containers = @()
 
+$ModifyDataFile = [System.IO.Path]::Combine($PSScriptRoot, '1_ModifyData.tests.ps1')
+$SearchDataFile = [System.IO.Path]::Combine($PSScriptRoot, '2_SearchData.tests.ps1')
+
 foreach($key in $DbContexts.Keys){
-    $Containers += New-PesterContainer -Path "$PSScriptRoot\1_ModifyData.tests.ps1" -Data @{ DbType = $key; DbContext = $DbContexts[$key] }
-    $Containers += New-PesterContainer -Path "$PSScriptRoot\2_SearchData.tests.ps1" -Data @{ DbType = $key; DbContext = $DbContexts[$key]; ContextParams = $ContextParams }
+    $Containers += New-PesterContainer -Path $ModifyDataFile -Data @{ DbType = $key; DbContext = $DbContexts[$key] }
+    $Containers += New-PesterContainer -Path $SearchDataFile -Data @{ DbType = $key; DbContext = $DbContexts[$key]; ContextParams = $ContextParams }
 }
 Invoke-Pester -Container $Containers

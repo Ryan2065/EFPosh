@@ -28,7 +28,7 @@ Function Remove-EFPoshEntity{
         [Parameter(Mandatory=$false)]
         [object]$DbContext,
         [Parameter(Mandatory=$true)]
-        [object]$Entity,
+        [object[]]$Entity,
         [switch]$SaveChanges
     )
     if(-not $PSBoundParameters.ContainsKey('DbContext')){

@@ -56,13 +56,14 @@ Function Start-EFPoshModel {
         }
     }
     If(-not (Test-Path $FilePath)) {
-        $null = Copy-Item "$ParentDirectory\DBContexts\MSSqlTemplate.ps1" -Destination $FilePath -Force
+        $TemplateFile = [System.IO.Path]::Combine($ParentDirectory, 'DBContexts', 'MSSqlTemplate.ps1')
+        $null = Copy-Item $TemplateFile -Destination $FilePath -Force
         $Content = Get-Content $FilePath -Raw
         $Content = $Content.Replace('##Server##', $MSSQLServer).Replace('##Database##', $MSSQLDatabase).Replace("'##IntegratedSecurity##'", "`$$MSSQLIntegratedSecurity")
         $Content | Out-File $FilePath -Force -Encoding utf8
     }
-
-    $Context = & "$ParentDirectory\DBContexts\MSSqlInformationSchemasDbContext.ps1" -Server $MSSQLServer -Database $MSSQLDatabase -IntegratedSecurity $MSSQLIntegratedSecurity
+    $SchemaDbContext = [System.IO.Path]::Combine($ParentDirectory, 'DBContexts', 'MSSqlInformationSchemasDbContext.ps1')
+    $Context = . $SchemaDbContext -Server $MSSQLServer -Database $MSSQLDatabase -IntegratedSecurity $MSSQLIntegratedSecurity
     $TableList = @{}
     $ViewList = @{}
     $SchemaList = New-Object System.Collections.Generic.List[string]
