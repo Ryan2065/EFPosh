@@ -107,7 +107,7 @@ PrivateData = @{
         # Tags applied to this module. These help with module discovery in online galleries.
         Tags = @('EntityFramework','ORM')
         
-        Prerelease = 'alpha'
+        # Prerelease = 'alpha'
 
         # A URL to the license for this module.
         LicenseUri = 'https://github.com/Ryan2065/EFPosh/blob/master/LICENSE'
