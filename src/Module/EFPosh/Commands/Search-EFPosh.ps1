@@ -39,6 +39,9 @@ Function Search-EFPosh{
     .PARAMETER Select
     Which properties do we return - default is all
     
+    .PARAMETER FromSql
+    Uses a SQL query as the base query instead of the entity
+
     .PARAMETER ToList
     Will return results in a List<T>
     
@@ -59,10 +62,33 @@ Function Search-EFPosh{
     #>
     [CmdletBinding(DefaultParameterSetName="ToList")]
     Param(
+        [Parameter(Mandatory=$false, ParameterSetName = 'ToList')]
+        [Parameter(Mandatory=$false, ParameterSetName = 'FirstOrDefault')]
+        [Parameter(Mandatory=$false, ParameterSetName = 'Any')]
+        [object]$DbContext,
         [Parameter(Mandatory=$true, ParameterSetName = 'ToList')]
         [Parameter(Mandatory=$true, ParameterSetName = 'FirstOrDefault')]
         [Parameter(Mandatory=$true, ParameterSetName = 'Any')]
-        [object]$Entity,
+        [ArgumentCompleter({
+            param ( $commandName,$parameterName,$wordToComplete,$commandAst,$fakeBoundParameters)
+            if($wordToComplete -like '$*'){
+                return
+            }
+            if($fakeBoundParameters.ContainsKey('DbContext')){
+                $EntityNames = $DbContext.GetEntities()
+            }
+            else{
+                $LatestContext = (Get-Module EFPosh).Invoke({ $Script:LatestDBContext })
+                if($null -eq $LatestContext) { return }
+                $EntityNames = $LatestContext.GetEntities()
+            }
+            foreach($ename in $EntityNames){
+                if($ename -like "*$($wordToComplete)*"){
+                    $eName
+                }
+            }
+        })]
+        [string]$Entity,
         [Parameter(Mandatory=$false, ParameterSetName = 'ToList')]
         [Parameter(Mandatory=$false, ParameterSetName = 'FirstOrDefault')]
         [Parameter(Mandatory=$false, ParameterSetName = 'Any')]
@@ -79,6 +105,10 @@ Function Search-EFPosh{
         [Parameter(Mandatory=$false, ParameterSetName = 'FirstOrDefault')]
         [Parameter(Mandatory=$false, ParameterSetName = 'Any')]
         [string[]]$Include,
+        [Parameter(Mandatory=$false, ParameterSetName = 'ToList')]
+        [Parameter(Mandatory=$false, ParameterSetName = 'FirstOrDefault')]
+        [Parameter(Mandatory=$false, ParameterSetName = 'Any')]
+        [string[]]$ThenInclude,
         [Parameter(Mandatory=$false, ParameterSetName = 'ToList')]
         [Parameter(Mandatory=$false, ParameterSetName = 'FirstOrDefault')]
         [Parameter(Mandatory=$false, ParameterSetName = 'Any')]
@@ -104,16 +134,67 @@ Function Search-EFPosh{
         [Parameter(Mandatory=$false, ParameterSetName = 'Any')]
         [string[]]$Select,
         [Parameter(Mandatory=$false, ParameterSetName = 'ToList')]
+        [Parameter(Mandatory=$false, ParameterSetName = 'FirstOrDefault')]
+        [Parameter(Mandatory=$false, ParameterSetName = 'Any')]
+        [string]$FromSql,
+        [Parameter(Mandatory=$false, ParameterSetName = 'ToList')]
         [switch]$ToList,
         [Parameter(Mandatory=$true, ParameterSetName = 'FirstOrDefault')]
         [switch]$FirstOrDefault,
         [Parameter(Mandatory=$true, ParameterSetName = 'Any')]
         [switch]$Any
     )
+    if(-not $PSBoundParameters.ContainsKey('DbContext')){
+        $DbContext = $Script:LatestDBContext
+    }
+    if($null -eq $DbContext){
+        throw "Null DbContext - Run New-EFPoshContext to get one and provide it."
+        return
+    }
+    if($DbContext.GetEntities() -notcontains $Entity){
+        throw "Entity not found in DbContext - If no DbContext was specified, the last created one was used."
+        return
+    }
+    $EntityObj = $DbContext."$($Entity)"
+
+    if(-not [string]::IsNullOrEmpty($FromSql)){
+        $EntityObj.FromSql($FromSql)
+    }
+
     if($Expression){
         try{
-            $ConvertedExpression = ConvertTo-BinaryExpression -FuncType $Entity.GetBaseType() -Expression $Expression -Arguments @($Arguments)
-            $Entity.ApplyExpression($ConvertedExpression)
+            #I'd love to break this out to it's own function, but below the PsCmdlet session state stuff needs to be run in here
+            #so it has to stay in the function called by the user.
+            $ExpressionValues = New-Object 'System.Collections.Generic.Dictionary[[string],[object]]'
+            $VariableValues = @{}
+            $varAsts = $Expression.Ast.FindAll({
+                param( [System.Management.Automation.Language.Ast] $AstObject )
+        
+            return ( $AstObject -is [System.Management.Automation.Language.VariableExpressionAst] )
+            }, $true)
+            foreach($varAst in $varAsts){
+                try{
+                    $ExpressionBase = Get-EFPoshExpressionBase -Ast $varAst
+                    #Why aren't we just getting the variable value?
+                    #To account for weird instances, like:  $var.PropertyName
+                    #or $var."$propIwant"
+                    if(-not [string]::IsNullOrEmpty($ExpressionBase)){
+                        $VariableValues[$varAst.VariablePath.UserPath] = $PSCmdlet.SessionState.PSVariable.GetValue($varAst.VariablePath.UserPath)
+                        $VariableValue = Invoke-Command -ScriptBlock {
+                            Param([hashtable]$VariableValues, $ExpressionBase)
+                            foreach($key in $VariableValues.Keys){
+                                Set-Variable -Name $key -Value $VariableValues[$key]
+                            }
+                            return (Invoke-Expression $ExpressionBase)
+                        } -ArgumentList @($VariableValues, $ExpressionBase) -ErrorAction SilentlyContinue
+                        if($null -ne $VariableValue){
+                            $ExpressionValues[$ExpressionBase.ToString()] = $VariableValue
+                        }
+                    }
+                }
+                catch{}
+            }
+            $EntityObj.ApplyExpression($Expression, $Arguments, $ExpressionValues)
         }
         catch{
             throw
@@ -123,41 +204,48 @@ Function Search-EFPosh{
     if($PSCmdlet.ParameterSetName -eq 'ToList'){
         $ToList = $true
     }
+
     if($Include){
+        $includeCount = 0
         foreach($instance in $Include){
-            if(-not ( [string]::IsNullOrEmpty($instance ))){
-                $Entity = $Entity.Include($instance)
+            $thenInstance = $null
+            if($ThenInclude){
+                $thenInstance = @($ThenInclude)[$includeCount]
             }
+            if(-not ( [string]::IsNullOrEmpty($instance))){
+                $EntityObj.Include($instance, $thenInstance)
+            }
+            $includeCount++
         }
     }
     if($AsNoTracking){
-        $Entity = $Entity.AsNoTracking()
+        $EntityObj.AsNoTracking()
     }
     if($Take){
-        $Entity = $Entity.Take($Take)
+        $EntityObj.Take($Take)
     }
     if($Skip){
-        $Entity = $Entity.Skip($Skip)
+        $EntityObj.Skip($Skip)
     }
     if($OrderBy){
-        $Entity = $Entity.OrderBy($OrderBy)
+        $EntityObj.OrderBy($OrderBy)
     }
     if($OrderByDescending){
-        $Entity = $Entity.OrderBy("$OrderByDescending descending")
+        $EntityObj.OrderBy($OrderByDescending)
     }
     if($Distinct){
-        $Entity = $Entity.Distinct()
+        $EntityObj.Distinct()
     }
     if($Select){
-        $Entity = $Entity.Select($Select)
+        $EntityObj.Select($Select)
     }
     if($ToList){
-        return $Entity.ToList()
+        return $EntityObj.ToList()
     }
     if($FirstOrDefault){
-        return $Entity.FirstOrDefault()
+        return $EntityObj.FirstOrDefault()
     }
     if($Any){
-        return $Entity.Any()
+        return $EntityObj.Any()
     }
 }

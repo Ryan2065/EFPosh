@@ -6,7 +6,7 @@ using System.Text;
 
 namespace PoshLogger
 {
-    internal class PoshLoggerOptionsSetup : ConfigureFromConfigurationOptions<PoshLoggerOptions>
+    internal class PoshLoggerOptionsSetup : ConfigureFromConfigurationOptions<PoshLoggerConfiguration>
     {
         public PoshLoggerOptionsSetup(ILoggerProviderConfiguration<PoshLoggerProvider>
                                       providerConfiguration)

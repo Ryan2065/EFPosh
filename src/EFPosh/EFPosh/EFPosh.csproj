@@ -1,35 +1,38 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net472</TargetFramework>
+    <TargetFrameworks>net472;net6.0</TargetFrameworks>
+	<ProduceReferenceAssembly>false</ProduceReferenceAssembly>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
     <IsPackageable>false</IsPackageable>
     <RestoreProjectStyle>PackageReference</RestoreProjectStyle>
+	<CopyLocalLockFileAssemblies Condition="'$(Configuration)'=='Debug'">true</CopyLocalLockFileAssemblies>
+	  <LangVersion>latest</LangVersion>
   </PropertyGroup>
 
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net472' ">
-      <PackageReference Include="System.Linq.Dynamic" Version="1.0.7" />
-  </ItemGroup>
-
-<ItemGroup Condition=" '$(TargetFramework)' == 'netstandard2.0' ">
-      <PackageReference Include="System.Linq.Dynamic.Core" Version="1.1.5" />
-  </ItemGroup>
-  
-
   <ItemGroup>
-    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="2.2.6" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="2.2.6" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="2.2.6" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="2.2.0" />
-    <PackageReference Include="SimpleImpersonation" Version="3.0.0" />
-    <PackageReference Include="System.Collections" Version="4.3.0" />
-    <PackageReference Include="System.Diagnostics.Debug" Version="4.3.0" />
-    <PackageReference Include="System.IO.FileSystem.Primitives" Version="4.3.0" />
-    
-    
-    <PackageReference Include="System.Runtime.Extensions" Version="4.3.0" />
-    <PackageReference Include="System.Runtime.InteropServices" Version="4.3.0" />
+
+	  <PackageReference Include="Microsoft.EntityFrameworkCore" Version="6.0.*" Condition="'$(TargetFramework)' == 'net6.0'" />
+	  <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="6.0.*" Condition="'$(TargetFramework)' == 'net6.0'" />
+	  <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="6.0.*" Condition="'$(TargetFramework)' == 'net6.0'" />
+	  <PackageReference Include="Microsoft.Extensions.Logging.Configuration" Version="6.0.*" Condition="'$(TargetFramework)' == 'net6.0'" />
+	  <PackageReference Include="SQLitePCLRaw.core" Version="2.0.7" Condition="'$(TargetFramework)' == 'net6.0'" />
+	  <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="2.0.7" Condition="'$(TargetFramework)' == 'net6.0'" />
+	  
+      <PackageReference Include="Microsoft.EntityFrameworkCore" Version="2.2.6" Condition="'$(TargetFramework)' == 'net472'" />
+      <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="2.2.6" Condition="'$(TargetFramework)' == 'net472'" />
+      <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="2.2.6" Condition="'$(TargetFramework)' == 'net472'" />
+      <PackageReference Include="Microsoft.Extensions.Logging.Configuration" Version="2.2.0" Condition="'$(TargetFramework)' == 'net472'" />
+	  <PackageReference Include="PowerShellStandard.Library" Version="5.1.1" PrivateAssets="All" />
+	  <PackageReference Include="System.ComponentModel.Annotations" Version="5.0.0" Condition="'$(TargetFramework)' == 'net472'" />
   </ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\PoshLogger\PoshLogger.csproj" />
+  </ItemGroup>
+
+
+
 
 </Project>

@@ -72,6 +72,10 @@ Function New-EFPoshContext{
         [Parameter(Mandatory = $false, ParameterSetName = "ConnectionString")]
         [Parameter(Mandatory = $false, ParameterSetName = "SQLite")]
         [Parameter(Mandatory = $false, ParameterSetName = "MSSQL")]
+        [switch]$RunMigrations,
+        [Parameter(Mandatory = $false, ParameterSetName = "ConnectionString")]
+        [Parameter(Mandatory = $false, ParameterSetName = "SQLite")]
+        [Parameter(Mandatory = $false, ParameterSetName = "MSSQL")]
         [switch]$ReadOnly,
         [Parameter(Mandatory = $false, ParameterSetName = "ConnectionString")]
         [Parameter(Mandatory = $false, ParameterSetName = "SQLite")]
@@ -80,16 +84,7 @@ Function New-EFPoshContext{
         [Parameter(Mandatory = $false, ParameterSetName = "ConnectionString")]
         [Parameter(Mandatory = $false, ParameterSetName = "SQLite")]
         [Parameter(Mandatory = $false, ParameterSetName = "MSSQL")]
-        [string]$ClassName,
-        [Parameter(Mandatory = $false, ParameterSetName = "ConnectionString")]
-        [Parameter(Mandatory = $false, ParameterSetName = "SQLite")]
-        [Parameter(Mandatory = $false, ParameterSetName = "MSSQL")]
-        [pscredential]$Credential,
-        [Parameter(Mandatory = $false, ParameterSetName = "ConnectionString")]
-        [Parameter(Mandatory = $false, ParameterSetName = "SQLite")]
-        [Parameter(Mandatory = $false, ParameterSetName = "MSSQL")]
-        [ValidateSet('Interactive', 'Network', 'Batch', 'Service', 'Unlock', 'NetworkCleartext', 'NewCredentials')]
-        [string]$LogonType = 'NewCredentials'
+        [string]$ClassName
     )
     if($Entities -and $AssemblyFile){
         throw 'Entities parameter can not be used with AssemblyFile - please use one or the other'
@@ -101,12 +96,11 @@ Function New-EFPoshContext{
     }
     $Script:LatestDBContext = $null
     $Script:LatestDBContext = [EFPosh.PoshContextInteractions]::new()
-    if($Credential){
-        $Script:LatestDBContext.Credential = [EFPosh.PoshCredential]::new()
-        $Script:LatestDBContext.Credential.UserName = $Credential.GetNetworkCredential().UserName
-        $Script:LatestDBContext.Credential.Domain = $Credential.GetNetworkCredential().Domain
-        $Script:LatestDBContext.Credential.Pass = $Credential.Password
-        $Script:LatestDBContext.Credential.LogonType = $LogonType
+    if($PSVersionTable.PSVersion.Major -gt 5){
+        $Script:LatestDBContext.SetDependencyFolder("$PSScriptRoot\Dependencies\net6.0")
+    }
+    else{
+        $Script:LatestDBContext.SetDependencyFolder("$PSScriptRoot\Dependencies\net472")
     }
     $boolEnsureCreated = $false
     if($EnsureCreated){ $boolEnsureCreated = $true }
@@ -121,10 +115,10 @@ Function New-EFPoshContext{
         $ConnectionString = "Server=$($MSSQLServer);Database=$($MSSQLDatabase);Integrated Security=$($MSSQLIntegratedSecurity)"
     }
     if([string]::IsNullOrEmpty($AssemblyFile)){
-        $null = $Script:LatestDBContext.NewPoshContext($ConnectionString, $DBType, $Entities, $boolEnsureCreated, $boolReadOnly)
+        $null = $Script:LatestDBContext.NewPoshContext($ConnectionString, $DBType, $Entities, $boolEnsureCreated, $RunMigrations.IsPresent, $boolReadOnly)
     }
     else{
-        $null = $Script:LatestDBContext.ExistingContext($ConnectionString, $DBType, $boolEnsureCreated, $boolReadOnly, $AssemblyFile, $ClassName)
+        $null = $Script:LatestDBContext.ExistingContext($ConnectionString, $DBType, $boolEnsureCreated, $RunMigrations.IsPresent ,$boolReadOnly, $AssemblyFile, $ClassName)
     }
     return $Script:LatestDBContext
 }

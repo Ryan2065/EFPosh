@@ -1,10 +1,7 @@
 Param(
     $Server,
     $Database,
-    $IntegratedSecurity,
-    [PScredential]$Credential,
-    [ValidateSet('Interactive', 'Network', 'Batch', 'Service', 'Unlock', 'NetworkCleartext', 'NewCredentials')]
-    [string]$LogonType = 'NewCredentials'
+    $IntegratedSecurity
 )
 
 if($null -eq ( Get-Module EFPosh )){
@@ -41,10 +38,6 @@ $Tables = @(
     ( New-EFPoshEntityDefinition -Type 'MSSQLInformationSchemaPrimaryKeys' -Keyless )
 )
 
-$optionalParams = @{}
-if($Credential){
-    $optionalParams['Credential'] = $Credential
-    $optionalParams['LogonType'] = $LogonType
-}
 
-return New-EFPoshContext -MSSQLServer $Server -MSSQLDatabase $Database -MSSQLIntegratedSecurity $IntegratedSecurity -Entities $Tables @optionalParams
+
+return (New-EFPoshContext -MSSQLServer $Server -MSSQLDatabase $Database -MSSQLIntegratedSecurity $IntegratedSecurity -Entities $Tables)

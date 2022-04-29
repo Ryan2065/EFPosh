@@ -1,31 +1,36 @@
 ﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Management.Automation;
 using System.Text;
 
 namespace PoshLogger
 {
-    [Microsoft.Extensions.Logging.ProviderAlias("PowerShell")]
-    public class PoshLoggerProvider : LoggerProvider
+    /// <summary>
+    /// Logging provider. A lot of ceremony
+    /// </summary>
+    public class PoshLoggerProvider : ILoggerProvider
     {
-        public override bool IsEnabled(LogLevel logLevel)
+        private PoshLoggerConfiguration _currentConfig;
+        private readonly IDisposable _onChangeToken;
+        private readonly ConcurrentDictionary<string, PoshILogger> _loggers = new ConcurrentDictionary<string, PoshILogger>();
+        public PoshLoggerProvider(IOptionsMonitor<PoshLoggerConfiguration> config)
         {
-            bool Result = logLevel != LogLevel.None
-                && this.Settings.LogLevel != LogLevel.None
-                && Convert.ToInt32(logLevel) >= Convert.ToInt32(this.Settings.LogLevel);
-
-            return Result;
+            _currentConfig = config.CurrentValue;
+            _onChangeToken = config.OnChange(updatedConfig => _currentConfig = updatedConfig);
         }
-
-        public override void WriteLog(LogEntry Info)
+        public ILogger CreateLogger(string categoryName)
         {
-            if(Info.Level == LogLevel.Debug || Info.Level == LogLevel.Trace)
-            {
-                // ToDo make this work and add info to streams
-                //WriteDebug("test");
-            }
+            if (string.IsNullOrEmpty(categoryName)) { categoryName = "PoshLoggerDefault"; }
+            return _loggers.GetOrAdd(categoryName, p => new PoshILogger(GetCurrentConfig));
         }
-        internal PoshLoggerOptions Settings { get; private set; }
+        private PoshLoggerConfiguration GetCurrentConfig() => _currentConfig;
+
+        public void Dispose()
+        {
+            _loggers.Clear();
+            _onChangeToken.Dispose();
+        }
     }
 }

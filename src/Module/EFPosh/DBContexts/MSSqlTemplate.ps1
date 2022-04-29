@@ -1,23 +1,13 @@
 Param(
     [string]$Server = '##Server##',
     [string]$Database = '##Database##',
-    [bool]$IntegratedSecurity = '##IntegratedSecurity##',
-    [PScredential]$Credential,
-    [ValidateSet('Interactive', 'Network', 'Batch', 'Service', 'Unlock', 'NetworkCleartext', 'NewCredentials')]
-    [string]$LogonType = 'NewCredentials',
-    [switch]$EFPoshLog
+    [bool]$IntegratedSecurity = '##IntegratedSecurity##'
 )
 
 if($null -eq ( Get-Module EFPosh )){
     Import-Module EFPosh -ErrorAction Stop
 }
-
-if($EFPoshLog){
-    $Env:EFPoshLog = 'true'
-}
-else{
-    $Env:EFPoshLog = $null
-}
+S
 
 #region Class Definitions
 
@@ -33,10 +23,5 @@ $Tables = @()
 
 #EndRegion
 
-$optionalParams = @{}
-if($Credential){
-    $optionalParams['Credential'] = $Credential
-    $optionalParams['LogonType'] = $LogonType
-}
 
-return (New-EFPoshContext -MSSQLServer $Server -MSSQLDatabase $Database -MSSQLIntegratedSecurity $IntegratedSecurity -Entities $Tables @optionalParams)
+return (New-EFPoshContext -MSSQLServer $Server -MSSQLDatabase $Database -MSSQLIntegratedSecurity $IntegratedSecurity -Entities $Tables)

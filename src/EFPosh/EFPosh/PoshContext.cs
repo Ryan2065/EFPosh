@@ -1,14 +1,14 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Internal;
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using System;
-using System.Linq;
+using System.Collections.Concurrent;
 
 namespace EFPosh
 {
+    /// <summary>
+    /// Base DbContext that will add entities on the fly based on an array of types
+    /// </summary>
     public class PoshContext : DbContext
     {
-        private PoshEntity[] _types;
+        private readonly PoshEntity[] _types;
         public PoshContext(DbContextOptions options, PoshEntity[] Types) : base(options)
         {
             _types = Types;
@@ -25,7 +25,11 @@ namespace EFPosh
             {
                 if (t.Keyless)
                 {
+#if NETFRAMEWORK
                     modelBuilder.Query(t.Type);
+#else
+                    modelBuilder.Entity(t.Type).HasNoKey();
+#endif
                 }
                 else
                 {
@@ -35,41 +39,19 @@ namespace EFPosh
                 {
                     modelBuilder.Entity(t.Type).HasKey(t.PrimaryKeys);
                 }
-                if (!string.IsNullOrEmpty(t.TableName))
+                string tableName = string.IsNullOrEmpty(t.TableName) ? t.Type.Name : t.TableName;
+                string schema = string.IsNullOrEmpty(t.Schema) ? null : t.Schema;
+                if (t.Keyless)
                 {
-                    if (!string.IsNullOrEmpty(t.Schema))
-                    {
-                        if (t.Keyless)
-                        {
-                            modelBuilder.Query(t.Type).ToView(t.TableName, t.Schema);
-                        }
-                        else
-                        {
-                            modelBuilder.Entity(t.Type).ToTable(t.TableName, t.Schema);
-                        }
-                    }
-                    else
-                    {
-                        if (t.Keyless)
-                        {
-                            modelBuilder.Query(t.Type).ToView(t.TableName);
-                        }
-                        else
-                        {
-                            modelBuilder.Entity(t.Type).ToTable(t.TableName);
-                        }
-                    }
+#if NETFRAMEWORK
+                    modelBuilder.Query(t.Type).ToView(tableName, schema);
+#else
+                    modelBuilder.Entity(t.Type).ToView(tableName, schema);
+#endif
                 }
-                else if (!string.IsNullOrEmpty(t.Schema))
+                else
                 {
-                    if (t.Keyless)
-                    {
-                        modelBuilder.Query(t.Type).ToView(t.Type.Name, t.Schema);
-                    }
-                    else
-                    {
-                        modelBuilder.Entity(t.Type).ToTable(t.Type.Name, t.Schema);
-                    }
+                    modelBuilder.Entity(t.Type).ToTable(tableName, schema);
                 }
             }
         }

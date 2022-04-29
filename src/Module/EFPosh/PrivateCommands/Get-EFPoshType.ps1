@@ -1,4 +1,23 @@
 Function Get-EFPoshType{
+    <#
+    .SYNOPSIS
+    PowerShell classes, if you re-run your class defintion it'll re-create the class type with a same name but from different assembly.
+    This attempts to figure out the newest veresion of the class
+    
+    .DESCRIPTION
+    PowerShell classes, if you re-run your class defintion it'll re-create the class type with a same name but from different assembly.
+    This attempts to figure out the newest veresion of the class
+    
+    .PARAMETER TypeName
+    The type we have to do this for
+    
+    .EXAMPLE
+    Class MyClass {  }
+    Get-EFPoshType -TypeName 'MyClass'
+    
+    .NOTES
+    .Author: Ryan Ephgrave
+    #>
     Param(
         [string]$TypeName
     )

@@ -64,7 +64,7 @@ switch ($DbType.ToUpper()) {
             $ContextParams['Credential'] = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $TestSettings.'MSSQLAlternativeCredentials-User', ($TestSettings.'MSSQLAlternativeCredentials-Pw' | ConvertTo-SecureString)
             $DbName = 'EFPoshTestsCredential'
         }
-        $Context = New-EFPoshContext -MSSQLServer $TestSettings.MSSqlServer -MSSQLDatabase $DbName -MSSQLIntegratedSecurity $TestSettings.IntegratedSecurity @ContextParams
+        $Context = New-EFPoshContext -MSSQLServer 'Lab-CM.Home.Lab' -MSSQLDatabase $DbName -MSSQLIntegratedSecurity $true @ContextParams
     }
 }
 

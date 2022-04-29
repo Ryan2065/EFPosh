@@ -12,7 +12,7 @@
 RootModule = '.\EFPosh.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.2.6'
+ModuleVersion = '2.0.2'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -54,7 +54,7 @@ Description = 'Extends Entity Framework Core functionality to PowerShell'
 #RequiredModules = @('PoshQueryable')
 
 # Assemblies that must be loaded prior to importing this module
-RequiredAssemblies = @('.\Dependencies\EFPosh.dll')
+# RequiredAssemblies = @('.\Dependencies\EFPosh.dll')
 
 # Script files (.ps1) that are run in the caller's environment prior to importing this module.
 # ScriptsToProcess = @()
@@ -74,18 +74,18 @@ FunctionsToExport = @(
     'New-EFPoshEntityDefinition', 
     'Start-EFPoshModel', 
     'Add-EFPoshModelEntity',
-    'New-EFPoshQuery',
-    'Add-EFPoshQuery',
-    'Start-EFPoshQuery',
-    'New-EFPoshEntityRelationship',
-    'Search-EFPosh'
+    'Search-EFPosh',
+    'New-EFPoshEntity',
+    'Add-EFPoshEntity',
+    'Save-EFPoshChanges',
+    'Remove-EFPoshEntity'
 )
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
-CmdletsToExport = @()
+# CmdletsToExport = @()
 
 # Variables to export from this module
-VariablesToExport = '*'
+VariablesToExport = @()
 
 # Aliases to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no aliases to export.
 AliasesToExport = @()
@@ -107,7 +107,7 @@ PrivateData = @{
         # Tags applied to this module. These help with module discovery in online galleries.
         Tags = @('EntityFramework','ORM')
         
-        #Prerelease = 'alpha'
+        # Prerelease = 'alpha'
 
         # A URL to the license for this module.
         LicenseUri = 'https://github.com/Ryan2065/EFPosh/blob/master/LICENSE'
@@ -119,7 +119,7 @@ PrivateData = @{
         # IconUri = ''
 
         # ReleaseNotes of this module
-        ReleaseNotes = 'Fixed bugs with Contains'
+        #ReleaseNotes = 'Fixed bugs with Contains'
 
         # Prerelease string of this module
         # Prerelease = ''
@@ -141,4 +141,3 @@ PrivateData = @{
 # DefaultCommandPrefix = ''
 
 }
-
