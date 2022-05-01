@@ -99,12 +99,12 @@ Function Add-EFPoshModelEntity {
         throw 'Must first run Start-EFPoshModel to set the DB and file information'
         return
     }
-    $Context = $Script:ContextFileSettings.Context
+    $efPoshtmpContext = $Script:ContextFileSettings.Context
     if($EntityType -eq 'Function'){
-        $SchemaInfo = Search-EFPosh -DbContext $Context -Entity 'MSSQLInformationSchemaColumns' -FromSql 'Select * FROM Information_Schema.Routine_Columns' -Expression { $_.TABLE_SCHEMA -eq $DBSchema -and $_.TABLE_NAME -eq $Name }
+        $SchemaInfo = Search-EFPosh -DbContext $efPoshtmpContext -Entity 'SchemaColumns' -FromSql 'Select * FROM Information_Schema.Routine_Columns' -Expression { $_.TABLE_SCHEMA -eq $DBSchema -and $_.TABLE_NAME -eq $Name }
     }
     else{
-        $SchemaInfo = Search-EFPosh -DbContext $Context -Entity 'MSSQLInformationSchemaColumns'  -Expression { $_.TABLE_SCHEMA -eq $DBSchema -and $_.TABLE_NAME -eq $Name }
+        $SchemaInfo = Search-EFPosh -DbContext $efPoshtmpContext -Entity 'SchemaColumns'  -Expression { $_.TABLE_SCHEMA -eq $DBSchema -and $_.TABLE_NAME -eq $Name }
     }
     
     if($null -eq $PropertyList) {
@@ -124,18 +124,7 @@ Function Add-EFPoshModelEntity {
     $ClassBuilder += "##ClassDefinitions##"
     $ClassString = $ClassBuilder -join [System.Environment]::NewLine
     $strPKs = '-Keyless'
-    $foundPrimaryKeys = Search-EFPosh -DbContext $Context -Entity 'MSSQLInformationSchemaPrimaryKeys' -Expression { $_.TABLESCHEMA -eq $DBSchema -and $_.TABLENAME -eq $Name } -FromSql "
-        SELECT 
-            KU.table_name as TABLENAME
-            ,column_name as PRIMARYKEYCOLUMN
-            ,KU.TABLE_SCHEMA as TABLESCHEMA
-            ,KU.ORDINAL_POSITION as POSITION
-        FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS AS TC
-        INNER JOIN
-            INFORMATION_SCHEMA.KEY_COLUMN_USAGE AS KU
-                ON TC.CONSTRAINT_TYPE = 'PRIMARY KEY' AND
-                    TC.CONSTRAINT_NAME = KU.CONSTRAINT_NAME 
-    "
+    $foundPrimaryKeys = Search-EFPosh -DbContext $efPoshtmpContext -Entity 'SchemaPrimaryKeys' -Expression { $_.TABLESCHEMA -eq $DBSchema -and $_.TABLENAME -eq $Name }
     if($foundPrimaryKeys.Count -gt 0){
         $foundPrimaryKeys = $foundPrimaryKeys | Sort-Object -Property POSITION
         
@@ -146,7 +135,11 @@ Function Add-EFPoshModelEntity {
         $strPks = $strPKs.TrimEnd(",'") + "')"
     }
     $TableArrayBuilder = @()
-    $TableString = "`$Tables += New-EFPoshEntityDefinition -Type '$Name' -TableName '$Name' -Schema '$DBSchema' $strPks"
+    $schemaParam = ''
+    if($DBSchema -ne 'dbo'){
+        $schemaParam = "-Schema '$DBSchema'"
+    }
+    $TableString = "`$Tables += New-EFPoshEntityDefinition -Type '$Name' -TableName '$Name' $schemaParam $strPks"
     if($FromSql){
         $TableString += " -FromSql '$($FromSql)'"
     }

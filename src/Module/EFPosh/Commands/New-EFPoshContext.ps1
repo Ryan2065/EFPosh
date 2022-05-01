@@ -106,6 +106,8 @@ Function New-EFPoshContext{
     if($EnsureCreated){ $boolEnsureCreated = $true }
     $boolReadOnly = $false
     if($ReadOnly) { $boolReadOnly = $true }
+    $boolRunMigrations = $false
+    if($RunMigrations){ $boolRunMigrations = $true }
     if($PSCmdlet.ParameterSetName -eq 'SQLite'){
         $DBType = 'SQLite'
         $ConnectionString = "Filename=$($SQLiteFile)"
@@ -115,10 +117,10 @@ Function New-EFPoshContext{
         $ConnectionString = "Server=$($MSSQLServer);Database=$($MSSQLDatabase);Integrated Security=$($MSSQLIntegratedSecurity)"
     }
     if([string]::IsNullOrEmpty($AssemblyFile)){
-        $null = $Script:LatestDBContext.NewPoshContext($ConnectionString, $DBType, $Entities, $boolEnsureCreated, $RunMigrations.IsPresent, $boolReadOnly)
+        $null = $Script:LatestDBContext.NewPoshContext($ConnectionString, $DBType, $Entities, $boolEnsureCreated, $boolRunMigrations, $boolReadOnly)
     }
     else{
-        $null = $Script:LatestDBContext.ExistingContext($ConnectionString, $DBType, $boolEnsureCreated, $RunMigrations.IsPresent ,$boolReadOnly, $AssemblyFile, $ClassName)
+        $null = $Script:LatestDBContext.ExistingContext($ConnectionString, $DBType, $boolEnsureCreated, $boolRunMigrations ,$boolReadOnly, $AssemblyFile, $ClassName)
     }
     return $Script:LatestDBContext
 }

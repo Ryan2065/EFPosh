@@ -30,20 +30,36 @@ Function Start-EFPoshModel {
     .NOTES
     .Author: Ryan Ephgrave
     #>
+    [CmdletBinding()]
     Param(
+        [Parameter(Mandatory = $true, ParameterSetName = "SqliteFile")]
+        [string]$SqliteFile,
+        [Parameter(Mandatory = $true, ParameterSetName = "ConnectionString")]
+        [string]$ConnectionString,
+        [Parameter(Mandatory = $false, ParameterSetName = "ConnectionString")]
+        [ValidateSet('SQLite', 'MSSQL')]
+        [string]$DbType = 'MSSQL',
         [Parameter(Mandatory = $true, ParameterSetName = "MSSQL")]
         [string]$MSSQLServer,
         [Parameter(Mandatory = $true, ParameterSetName = "MSSQL")]
         [string]$MSSQLDatabase,
         [Parameter(Mandatory = $false, ParameterSetName = "MSSQL")]
         [bool]$MSSQLIntegratedSecurity = $true,
+        [Parameter(Mandatory = $true, ParameterSetName = "ConnectionString")]
         [Parameter(Mandatory = $true, ParameterSetName = "MSSQL")]
+        [Parameter(Mandatory = $true, ParameterSetName = "SqliteFile")]
         [string]$FilePath,
+        [Parameter(Mandatory = $false, ParameterSetName = "ConnectionString")]
         [Parameter(Mandatory = $false, ParameterSetName = "MSSQL")]
+        [Parameter(Mandatory = $false, ParameterSetName = "SqliteFile")]
         [switch]$Overwrite,
+        [Parameter(Mandatory = $false, ParameterSetName = "ConnectionString")]
         [Parameter(Mandatory = $false, ParameterSetName = "MSSQL")]
+        [Parameter(Mandatory = $false, ParameterSetName = "SqliteFile")]
         [string[]]$EntitesToMap,
+        [Parameter(Mandatory = $false, ParameterSetName = "ConnectionString")]
         [Parameter(Mandatory = $false, ParameterSetName = "MSSQL")]
+        [Parameter(Mandatory = $false, ParameterSetName = "SqliteFile")]
         [switch]$AllEntities
     )
     Write-Verbose 'Creating new Model object'
@@ -57,18 +73,51 @@ Function Start-EFPoshModel {
     }
     If(-not (Test-Path $FilePath)) {
         $TemplateFile = [System.IO.Path]::Combine($ParentDirectory, 'DBContexts', 'MSSqlTemplate.ps1')
+        if($PSCmdlet.ParameterSetName -eq 'SqliteFile' -or $DbType -eq 'SQLite'){
+            $TemplateFile = [System.IO.Path]::Combine($ParentDirectory, 'DBContexts', 'SqliteTemplate.ps1')
+        }
         $null = Copy-Item $TemplateFile -Destination $FilePath -Force
         $Content = Get-Content $FilePath -Raw
-        $Content = $Content.Replace('##Server##', $MSSQLServer).Replace('##Database##', $MSSQLDatabase).Replace("'##IntegratedSecurity##'", "`$$MSSQLIntegratedSecurity")
+        $Content = $Content.Replace('##Server##', $MSSQLServer).Replace('##Database##', $MSSQLDatabase).Replace("'##IntegratedSecurity##'", "`$$MSSQLIntegratedSecurity").Replace('##SQLiteFile##', $SqliteFile)
         $Content | Out-File $FilePath -Force -Encoding utf8
     }
-    $SchemaDbContext = [System.IO.Path]::Combine($ParentDirectory, 'DBContexts', 'MSSqlInformationSchemasDbContext.ps1')
-    $Context = . $SchemaDbContext -Server $MSSQLServer -Database $MSSQLDatabase -IntegratedSecurity $MSSQLIntegratedSecurity
+    
+    $ContextParams = @{}
+
+    if($PSCmdlet.ParameterSetName -eq 'SqliteFile' -or $DbType -eq 'SQLite'){
+        $SchemaDbContext = [System.IO.Path]::Combine($ParentDirectory, 'DBContexts', 'SqLiteSchemasDbContext.ps1')
+        if([string]::IsNullOrEmpty($ConnectionString)){
+            $ContextParams = @{
+                'SqliteFile' = $SqliteFile
+            }
+        }
+        else{
+            $ContextParams = @{
+                'ConnectionString' = $ConnectionString
+            }
+        }
+    }
+    else{
+        $SchemaDbContext = [System.IO.Path]::Combine($ParentDirectory, 'DBContexts', 'MSSqlInformationSchemasDbContext.ps1')
+        if([string]::IsNullOrEmpty($ConnectionString)){
+            $ContextParams = @{
+                'Server' = $MSSQLServer
+                'Database' = $MSSQLDatabase
+                'IntegratedSecurity' = $MSSQLIntegratedSecurity
+            }
+        }
+        else{
+            $ContextParams = @{
+                'ConnectionString' = $ConnectionString
+            }
+        }
+    }
+    $efPoshtmpContext = . $SchemaDbContext @ContextParams
     $TableList = @{}
     $ViewList = @{}
     $SchemaList = New-Object System.Collections.Generic.List[string]
     
-    $AllTableInformation = $Context.MSSQLInformationSchemaTables.ToList()
+    $AllTableInformation = $efPoshtmpContext.SchemaTables.ToList()
     
     $UniqueSchemas = $AllTableInformation.TABLE_SCHEMA | Select-Object -Unique
     foreach($schema in $UniqueSchemas) { $SchemaList.Add($schema) }
@@ -86,7 +135,7 @@ Function Start-EFPoshModel {
     }
     
     $Script:ContextFileSettings = @{
-        'Context' = $Context
+        'Context' = $efPoshtmpContext
         'FilePath' = $FilePath
         'EntitiesToMap' = @($EntitesToMap)
         'Schemas' = $SchemaList

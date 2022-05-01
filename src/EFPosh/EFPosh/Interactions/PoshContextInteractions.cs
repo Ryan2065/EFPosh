@@ -13,6 +13,7 @@ using PoshLogger;
 
 namespace EFPosh
 {
+
     /// <summary>
     /// Allows PowerShell to interact with the DbContext. Directly interacting with the DbContext will cause errors due to assemblies not being fully loaded
     /// Calling through here will allow the assembly loaders to find missing assemblies on demand so DbContext interactions won't fail.
@@ -60,7 +61,7 @@ namespace EFPosh
         /// <summary>
         /// Used in .net 6+ to set up the ILogger for the new way Entity Framework needs loggers
         /// </summary>
-        public static readonly ILoggerFactory PoshLoggerFactory = LoggerFactory.Create(builder => { 
+        private readonly ILoggerFactory PoshLoggerFactory = LoggerFactory.Create(builder => { 
                                                                     builder.SetMinimumLevel(LogLevel.Warning)
                                                                             .AddFilter("Microsoft.EntityFrameworkCore.Database.Command", LogLevel.Information)
                                                                             .AddPoshLogger(config =>
@@ -87,7 +88,7 @@ namespace EFPosh
         /// </summary>
         /// <param name="services">Collection of services to build into the provider</param>
         /// <returns>Built provider</returns>
-        static IServiceProvider BuildServiceProvider(IServiceCollection services)
+        IServiceProvider BuildServiceProvider(IServiceCollection services)
         {
             services.AddLogging(p => p.SetMinimumLevel(LogLevel.Warning).AddFilter("Microsoft.EntityFrameworkCore.Database.Command", LogLevel.Trace).AddPoshLogger(config =>
             {
@@ -147,33 +148,30 @@ namespace EFPosh
             dbOptions.UseInternalServiceProvider(sp);
 #endif
 
-            DbContext dbContext = null;
             if(typeof(T) == typeof(PoshContext))
             {
                 _logger.LogDebug("Creating new PoshContext");
-                dbContext = new PoshContext(dbOptions.Options, Types);
+                DBContext = PoshContextFactory.NewPoshContext(dbOptions as DbContextOptionsBuilder<PoshContext>, Types);
             }
             else
             {
                 _logger.LogDebug("Creating new instance of {Type}", typeof(T).Name);
-                dbContext = (DbContext)Activator.CreateInstance(typeof(T), new object[] { dbOptions.Options });
+                DBContext = (DbContext)Activator.CreateInstance(typeof(T), new object[] { dbOptions.Options });
             }
             if (RunMigrations)
             {
                 _logger.LogDebug("Running Migrate - If the db is not on the newest version, it will be updated");
-                dbContext.Database.Migrate();
+                DBContext.Database.Migrate();
             }
             else if (EnsureCreated)
             {
                 _logger.LogDebug("Running EnsureCreated - If the db is not created yet, it will be created now.");
-                dbContext.Database.EnsureCreated();
+                DBContext.Database.EnsureCreated();
             }
             if (ReadOnly)
             {
-                dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+                DBContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
             }
-            _poshContext = dbContext;
-            DBContext = dbContext;
             if (Types == null) { return; }
             foreach (var t in Types)
             {

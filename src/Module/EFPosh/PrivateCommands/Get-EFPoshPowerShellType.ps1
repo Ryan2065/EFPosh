@@ -26,9 +26,10 @@ Function Get-EFPoshPowerShellType {
         "ntext" { $strType = "[string" }
         "numeric" { $strType += "decimal" }
         "nvarchar" { $strType = "[string" }
-        "real" { $strType += "float" }
+        "real" { $strType += "double" }
         "smalldatetime" { $strType += "DateTime" }
         "smallint" { $strType += "short" }
+        'int16' { $strType += "short" }
         "smallmoney" { $strType += "decimal" }
         "text" { $strType = "[string" }
         "time" { $strType += "TimeSpan" }
@@ -38,6 +39,14 @@ Function Get-EFPoshPowerShellType {
         "varbinary" { $strType = "[byte[]" }
         "varchar" { $strType = "[string" }
         "xml" { $strType = "[string" }
+        'boolean' { $strType = "bool" }
+        'int32' { $strType += "int" }
+        'INTEGER' { $strType += "long" }
+        'int64' { $strType += "long" }
+        'currency' { $strType += "decimal" }
+        'smalldate' { $strType += "DateTime" }
+        'BLOB' { $strType = "[byte[]" }
+        default { $strType = "[byte[]" }
     }
     $strType += "]"
     if($strType.contains('[Nullable')){

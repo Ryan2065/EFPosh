@@ -1,5 +1,9 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Linq;
+using System.Linq.Expressions;
 
 namespace EFPosh
 {
@@ -17,6 +21,12 @@ namespace EFPosh
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
 
+        }
+
+        public void SetPrimaryKeys<T>(ModelBuilder modelBuilder, string[] Primarykeys)
+            where T : class
+        {
+            modelBuilder.Entity<T>().HasKey(Primarykeys);
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -37,7 +47,9 @@ namespace EFPosh
                 }
                 if (t.PrimaryKeys != null)
                 {
-                    modelBuilder.Entity(t.Type).HasKey(t.PrimaryKeys);
+                    var methodInfo = typeof(PoshContext).GetMethods().Where(p => p.Name.Equals("SetPrimaryKeys")).FirstOrDefault();
+                    var genMethod = methodInfo.MakeGenericMethod(new Type[] { t.Type });
+                    genMethod.Invoke(this, new object[] { modelBuilder, t.PrimaryKeys });
                 }
                 string tableName = string.IsNullOrEmpty(t.TableName) ? t.Type.Name : t.TableName;
                 string schema = string.IsNullOrEmpty(t.Schema) ? null : t.Schema;
@@ -56,4 +68,6 @@ namespace EFPosh
             }
         }
     }
+
+
 }
