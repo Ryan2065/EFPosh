@@ -268,7 +268,10 @@ namespace EFPosh
             {
                 // this will usually error
                 obj = expAst.SafeGetValue();
-                
+                if(obj == null)
+                {
+                    return null;
+                }
             }
             catch { }
             if(obj != null)

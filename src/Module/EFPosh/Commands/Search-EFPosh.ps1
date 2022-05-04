@@ -187,9 +187,7 @@ Function Search-EFPosh{
                             }
                             return (Invoke-Expression $ExpressionBase)
                         } -ArgumentList @($VariableValues, $ExpressionBase) -ErrorAction SilentlyContinue
-                        if($null -ne $VariableValue){
-                            $ExpressionValues[$ExpressionBase.ToString()] = $VariableValue
-                        }
+                        $ExpressionValues[$ExpressionBase.ToString()] = $VariableValue
                     }
                 }
                 catch{}
